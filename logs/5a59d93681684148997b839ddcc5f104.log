@@ -1,0 +1,200 @@
+2026-09-17 10:33:14,479 INFO [backend.app.api.routes.support] [b9831fc0] Log level changed to DEBUG
+2026-09-17 10:33:14,480 INFO [backend.app.api.routes.bug_report] [b9831fc0] Bug report: enabled debug logging
+2026-09-17 10:33:14,480 DEBUG [backend.app.services.bambu_mqtt] [b9831fc0] [[SERIAL]] Requesting status update (pushall)
+2026-09-17 10:33:14,482 INFO [uvicorn.access] [-] [IP]:0 - "POST /api/v1/bug-report/start-logging HTTP/1.1" 200
+2026-09-17 10:33:14,925 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Received gcode_state: RUNNING, gcode_file: LEDmount.3mf, subtask_name: LEDmount
+2026-09-17 10:33:14,926 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] AMS dict fields: {'ams_exist_bits': '1', 'tray_exist_bits': '7', 'tray_is_bbl_bits': '7', 'tray_tar': '1', 'tray_now': '1', 'tray_pre': '1', 'tray_read_done_bits': '7', 'tray_reading_bits': '0', 'version': 19, 'insert_flag': True, 'power_on_flag': False}
+2026-09-17 10:33:14,926 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] tray_now updated: 1
+2026-09-17 10:33:14,927 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Merged AMS data: 1 new units, 1 total
+2026-09-17 10:33:14,927 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] AMS 0 info=0x2003 -> extruder 0
+2026-09-17 10:33:14,928 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] ams_extruder_map: {'0': 0}
+2026-09-17 10:33:14,928 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] ams_status: 768 (main=3, sub=0)
+2026-09-17 10:33:14,929 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Received command response: push_status
+2026-09-17 10:33:14,929 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] chamber_temper raw value: 5.0
+2026-09-17 10:33:14,930 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] chamber_temper direct value: 5.0°C (heater OFF)
+2026-09-17 10:33:14,930 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Chamber heating calculated: target=0.0, current=5.0, heating=False, respect_local=False
+2026-09-17 10:33:14,931 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Chamber temp updated to: 5.0, target: 0.0, heating: False
+2026-09-17 10:33:14,931 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] HMS data received: []
+2026-09-17 10:33:14,931 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] ipcam field: {'ipcam_dev': '1', 'ipcam_record': 'enable', 'timelapse': 'disable', 'resolution': '', 'tutk_server': 'disable', 'mode_bits': 3}
+2026-09-17 10:33:14,932 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] wifi_signal received: -67dBm
+2026-09-17 10:33:14,933 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] lights_report: [{'node': 'chamber_light', 'mode': 'on'}]
+2026-09-17 10:33:14,934 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] gcode_state: RUNNING -> RUNNING, file: LEDmount.3mf, subtask: LEDmount
+2026-09-17 10:33:16,957 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] ams_extruder_map: {'0': 0}
+2026-09-17 10:33:16,958 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Received command response: push_status
+2026-09-17 10:33:16,958 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] wifi_signal received: -70dBm
+2026-09-17 10:33:18,969 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] ams_extruder_map: {'0': 0}
+2026-09-17 10:33:18,969 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Received command response: push_status
+2026-09-17 10:33:18,969 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] wifi_signal received: -69dBm
+2026-09-17 10:33:21,364 DEBUG [backend.app.main] [-] [[PRINTER]] Runtime tracking: added 30s, total=19740s (5.48h)
+2026-09-17 10:33:21,372 DEBUG [backend.app.main] [-] Updated runtime for 1 printer(s)
+2026-09-17 10:33:23,027 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] ams_extruder_map: {'0': 0}
+2026-09-17 10:33:23,028 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Received command response: push_status
+2026-09-17 10:33:23,029 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] wifi_signal received: -67dBm
+2026-09-17 10:33:23,439 DEBUG [backend.app.api.routes.printers] [8b88ff03] API returning ams_mapping: [], ams_extruder_map: {'0': 0}
+2026-09-17 10:33:23,440 DEBUG [backend.app.api.routes.printers] [8b88ff03] Using tray_now directly as global ID: 1
+2026-09-17 10:33:25,150 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Received command response: push_status
+2026-09-17 10:33:27,150 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] ams_extruder_map: {'0': 0}
+2026-09-17 10:33:27,151 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Received command response: push_status
+2026-09-17 10:33:29,194 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] ams_extruder_map: {'0': 0}
+2026-09-17 10:33:29,195 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Received command response: push_status
+2026-09-17 10:33:32,657 INFO [backend.app.main] [-] Recorded 1 AMS sensor history entries
+2026-09-17 10:33:33,282 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] ams_extruder_map: {'0': 0}
+2026-09-17 10:33:33,283 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Received command response: push_status
+2026-09-17 10:33:33,283 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] wifi_signal received: -68dBm
+2026-09-17 10:33:35,310 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Received command response: push_status
+2026-09-17 10:33:35,310 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] wifi_signal received: -67dBm
+2026-09-17 10:33:37,341 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Received command response: push_status
+2026-09-17 10:33:37,342 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] wifi_signal received: -69dBm
+2026-09-17 10:33:41,420 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] ams_extruder_map: {'0': 0}
+2026-09-17 10:33:41,421 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Received command response: push_status
+2026-09-17 10:33:43,438 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] ams_extruder_map: {'0': 0}
+2026-09-17 10:33:43,439 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Received command response: push_status
+2026-09-17 10:33:43,440 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] wifi_signal received: -70dBm
+2026-09-17 10:33:45,489 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] ams_extruder_map: {'0': 0}
+2026-09-17 10:33:45,490 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Received command response: push_status
+2026-09-17 10:33:45,491 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] wifi_signal received: -67dBm
+2026-09-17 10:33:50,030 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] ams_extruder_map: {'0': 0}
+2026-09-17 10:33:50,030 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Received command response: push_status
+2026-09-17 10:33:50,031 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] wifi_signal received: -65dBm
+2026-09-17 10:33:51,379 DEBUG [backend.app.main] [-] [[PRINTER]] Runtime tracking: added 30s, total=19770s (5.49h)
+2026-09-17 10:33:51,388 DEBUG [backend.app.main] [-] Updated runtime for 1 printer(s)
+2026-09-17 10:33:51,726 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] ams_extruder_map: {'0': 0}
+2026-09-17 10:33:51,727 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Received command response: push_status
+2026-09-17 10:33:53,497 DEBUG [backend.app.api.routes.printers] [be5f976d] API returning ams_mapping: [], ams_extruder_map: {'0': 0}
+2026-09-17 10:33:53,498 DEBUG [backend.app.api.routes.printers] [be5f976d] Using tray_now directly as global ID: 1
+2026-09-17 10:33:53,626 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] ams_extruder_map: {'0': 0}
+2026-09-17 10:33:53,626 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Received command response: push_status
+2026-09-17 10:33:53,627 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] wifi_signal received: -70dBm
+2026-09-17 10:33:54,375 DEBUG [backend.app.main] [-] Recorded 3 printer sensor history entries
+2026-09-17 10:33:57,705 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] ams_extruder_map: {'0': 0}
+2026-09-17 10:33:57,706 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Received command response: push_status
+2026-09-17 10:33:57,708 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] wifi_signal received: -67dBm
+2026-09-17 10:33:59,750 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] ams_extruder_map: {'0': 0}
+2026-09-17 10:33:59,751 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Received command response: push_status
+2026-09-17 10:33:59,752 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] wifi_signal received: -66dBm
+2026-09-17 10:33:59,764 INFO [backend.app.main] [-] [SNAPSHOT] Using buffered frame for printer 1: 56665 bytes
+2026-09-17 10:33:59,765 DEBUG [backend.app.main] [-] [FINISH-PHOTO-BANK] banked in-print frame for printer 1 at layer 6/35 (56665 bytes)
+2026-09-17 10:34:01,802 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] ams_extruder_map: {'0': 0}
+2026-09-17 10:34:01,803 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Received command response: push_status
+2026-09-17 10:34:01,804 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] wifi_signal received: -69dBm
+2026-09-17 10:34:05,828 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Received command response: push_status
+2026-09-17 10:34:05,829 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] wifi_signal received: -66dBm
+2026-09-17 10:34:07,855 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Received command response: push_status
+2026-09-17 10:34:09,927 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] ams_extruder_map: {'0': 0}
+2026-09-17 10:34:09,928 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Received command response: push_status
+2026-09-17 10:34:11,948 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] ams_extruder_map: {'0': 0}
+2026-09-17 10:34:11,949 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Received command response: push_status
+2026-09-17 10:34:16,190 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] ams_extruder_map: {'0': 0}
+2026-09-17 10:34:16,190 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Received command response: push_status
+2026-09-17 10:34:16,191 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] wifi_signal received: -65dBm
+2026-09-17 10:34:18,045 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] ams_extruder_map: {'0': 0}
+2026-09-17 10:34:18,045 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Received command response: push_status
+2026-09-17 10:34:20,312 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] ams_extruder_map: {'0': 0}
+2026-09-17 10:34:20,313 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Received command response: push_status
+2026-09-17 10:34:20,318 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] wifi_signal received: -66dBm
+2026-09-17 10:34:21,391 DEBUG [backend.app.main] [-] [[PRINTER]] Runtime tracking: added 30s, total=19800s (5.50h)
+2026-09-17 10:34:21,395 DEBUG [backend.app.main] [-] Updated runtime for 1 printer(s)
+2026-09-17 10:34:23,557 DEBUG [backend.app.api.routes.printers] [dee57a13] API returning ams_mapping: [], ams_extruder_map: {'0': 0}
+2026-09-17 10:34:23,558 DEBUG [backend.app.api.routes.printers] [dee57a13] Using tray_now directly as global ID: 1
+2026-09-17 10:34:24,132 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Received command response: push_status
+2026-09-17 10:34:24,133 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] wifi_signal received: -65dBm
+2026-09-17 10:34:26,234 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Received command response: push_status
+2026-09-17 10:34:28,219 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Received command response: push_status
+2026-09-17 10:34:32,430 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] ams_extruder_map: {'0': 0}
+2026-09-17 10:34:32,430 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Received command response: push_status
+2026-09-17 10:34:32,431 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] wifi_signal received: -64dBm
+2026-09-17 10:34:34,328 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Received command response: push_status
+2026-09-17 10:34:34,328 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] wifi_signal received: -66dBm
+2026-09-17 10:34:36,423 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] ams_extruder_map: {'0': 0}
+2026-09-17 10:34:36,424 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Received command response: push_status
+2026-09-17 10:34:36,424 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] wifi_signal received: -65dBm
+2026-09-17 10:34:40,504 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] ams_extruder_map: {'0': 0}
+2026-09-17 10:34:40,504 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Received command response: push_status
+2026-09-17 10:34:40,505 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] wifi_signal received: -69dBm
+2026-09-17 10:34:40,517 INFO [backend.app.main] [-] [SNAPSHOT] Using buffered frame for printer 1: 57107 bytes
+2026-09-17 10:34:40,518 DEBUG [backend.app.main] [-] [FINISH-PHOTO-BANK] banked in-print frame for printer 1 at layer 6/35 (57107 bytes)
+2026-09-17 10:34:42,507 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Received command response: push_status
+2026-09-17 10:34:42,508 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] wifi_signal received: -65dBm
+2026-09-17 10:34:44,516 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] ams_extruder_map: {'0': 0}
+2026-09-17 10:34:44,517 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Received command response: push_status
+2026-09-17 10:34:44,517 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] wifi_signal received: -64dBm
+2026-09-17 10:34:46,554 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] ams_extruder_map: {'0': 0}
+2026-09-17 10:34:46,554 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Received command response: push_status
+2026-09-17 10:34:46,555 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] wifi_signal received: -65dBm
+2026-09-17 10:34:50,665 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] ams_extruder_map: {'0': 0}
+2026-09-17 10:34:50,666 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Received command response: push_status
+2026-09-17 10:34:51,400 DEBUG [backend.app.main] [-] [[PRINTER]] Runtime tracking: added 30s, total=19830s (5.51h)
+2026-09-17 10:34:51,409 DEBUG [backend.app.main] [-] Updated runtime for 1 printer(s)
+2026-09-17 10:34:52,628 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] ams_extruder_map: {'0': 0}
+2026-09-17 10:34:52,629 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Received command response: push_status
+2026-09-17 10:34:52,630 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] wifi_signal received: -64dBm
+2026-09-17 10:34:53,598 DEBUG [backend.app.api.routes.printers] [d97ec611] API returning ams_mapping: [], ams_extruder_map: {'0': 0}
+2026-09-17 10:34:53,598 DEBUG [backend.app.api.routes.printers] [d97ec611] Using tray_now directly as global ID: 1
+2026-09-17 10:34:54,391 DEBUG [backend.app.main] [-] Recorded 3 printer sensor history entries
+2026-09-17 10:34:54,657 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] ams_extruder_map: {'0': 0}
+2026-09-17 10:34:54,658 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Received command response: push_status
+2026-09-17 10:34:54,659 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] wifi_signal received: -65dBm
+2026-09-17 10:34:58,751 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] ams_extruder_map: {'0': 0}
+2026-09-17 10:34:58,752 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Received command response: push_status
+2026-09-17 10:34:58,752 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] wifi_signal received: -67dBm
+2026-09-17 10:35:00,775 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Received command response: push_status
+2026-09-17 10:35:00,776 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] wifi_signal received: -66dBm
+2026-09-17 10:35:02,824 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] ams_extruder_map: {'0': 0}
+2026-09-17 10:35:02,825 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Received command response: push_status
+2026-09-17 10:35:02,826 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] wifi_signal received: -67dBm
+2026-09-17 10:35:06,860 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Received command response: push_status
+2026-09-17 10:35:06,860 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] wifi_signal received: -66dBm
+2026-09-17 10:35:06,866 INFO [backend.app.main] [-] [SNAPSHOT] Using buffered frame for printer 1: 53873 bytes
+2026-09-17 10:35:06,866 DEBUG [backend.app.main] [-] [FINISH-PHOTO-BANK] banked in-print frame for printer 1 at layer 6/35 (53873 bytes)
+2026-09-17 10:35:08,940 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] ams_extruder_map: {'0': 0}
+2026-09-17 10:35:08,940 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Received command response: push_status
+2026-09-17 10:35:08,941 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] wifi_signal received: -65dBm
+2026-09-17 10:35:10,994 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] ams_extruder_map: {'0': 0}
+2026-09-17 10:35:10,995 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Received command response: push_status
+2026-09-17 10:35:15,014 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] ams_extruder_map: {'0': 0}
+2026-09-17 10:35:15,014 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Received command response: push_status
+2026-09-17 10:35:15,015 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] wifi_signal received: -67dBm
+2026-09-17 10:35:17,063 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Received command response: push_status
+2026-09-17 10:35:17,064 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] wifi_signal received: -64dBm
+2026-09-17 10:35:19,077 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Received command response: push_status
+2026-09-17 10:35:19,077 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] wifi_signal received: -63dBm
+2026-09-17 10:35:21,109 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Received command response: push_status
+2026-09-17 10:35:21,109 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] wifi_signal received: -61dBm
+2026-09-17 10:35:21,419 DEBUG [backend.app.main] [-] [[PRINTER]] Runtime tracking: added 30s, total=19860s (5.52h)
+2026-09-17 10:35:21,437 DEBUG [backend.app.main] [-] Updated runtime for 1 printer(s)
+2026-09-17 10:35:23,629 DEBUG [backend.app.api.routes.printers] [43fc6a0f] API returning ams_mapping: [], ams_extruder_map: {'0': 0}
+2026-09-17 10:35:23,629 DEBUG [backend.app.api.routes.printers] [43fc6a0f] Using tray_now directly as global ID: 1
+2026-09-17 10:35:25,150 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Received command response: push_status
+2026-09-17 10:35:27,198 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Received command response: push_status
+2026-09-17 10:35:29,458 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Received command response: push_status
+2026-09-17 10:35:29,459 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] wifi_signal received: -65dBm
+2026-09-17 10:35:33,298 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Received command response: push_status
+2026-09-17 10:35:33,301 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] wifi_signal received: -64dBm
+2026-09-17 10:35:35,303 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Received command response: push_status
+2026-09-17 10:35:35,303 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] wifi_signal received: -65dBm
+2026-09-17 10:35:37,355 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Received command response: push_status
+2026-09-17 10:35:37,356 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] wifi_signal received: -63dBm
+2026-09-17 10:35:41,432 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Received command response: push_status
+2026-09-17 10:35:41,433 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] wifi_signal received: -60dBm
+2026-09-17 10:35:43,453 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Received command response: push_status
+2026-09-17 10:35:43,454 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] wifi_signal received: -69dBm
+2026-09-17 10:35:45,487 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Received command response: push_status
+2026-09-17 10:35:45,491 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] wifi_signal received: -65dBm
+2026-09-17 10:35:50,029 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Received command response: push_status
+2026-09-17 10:35:50,030 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] wifi_signal received: -67dBm
+2026-09-17 10:35:51,441 DEBUG [backend.app.main] [-] [[PRINTER]] Runtime tracking: added 30s, total=19890s (5.53h)
+2026-09-17 10:35:51,445 DEBUG [backend.app.main] [-] Updated runtime for 1 printer(s)
+2026-09-17 10:35:51,578 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Received command response: push_status
+2026-09-17 10:35:51,578 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] wifi_signal received: -66dBm
+2026-09-17 10:35:53,618 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Received command response: push_status
+2026-09-17 10:35:53,618 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] wifi_signal received: -67dBm
+2026-09-17 10:35:53,684 DEBUG [backend.app.api.routes.printers] [7821f89b] API returning ams_mapping: [], ams_extruder_map: {'0': 0}
+2026-09-17 10:35:53,684 DEBUG [backend.app.api.routes.printers] [7821f89b] Using tray_now directly as global ID: 1
+2026-09-17 10:35:54,406 DEBUG [backend.app.main] [-] Recorded 3 printer sensor history entries
+2026-09-17 10:35:57,668 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Received command response: push_status
+2026-09-17 10:35:59,693 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Received command response: push_status
+2026-09-17 10:35:59,693 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] wifi_signal received: -69dBm
+2026-09-17 10:36:01,742 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Received command response: push_status
+2026-09-17 10:36:01,743 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] wifi_signal received: -68dBm
+2026-09-17 10:36:03,908 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Received command response: push_status
+2026-09-17 10:36:03,908 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] wifi_signal received: -69dBm
