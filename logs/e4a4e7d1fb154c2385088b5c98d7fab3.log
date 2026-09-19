@@ -1,0 +1,200 @@
+2026-09-19 14:44:49,550 INFO [backend.app.services.bambu_ftp] [-] FTP connected successfully to [IP] (model=[PRINTER], prot_c=False)
+2026-09-19 14:45:20,220 INFO [backend.app.services.bambu_ftp] [-] FTP connected successfully to [IP] (model=[PRINTER], prot_c=False)
+2026-09-19 14:45:20,924 INFO [backend.app.main] [-] Recorded 1 AMS sensor history entries
+2026-09-19 14:45:50,803 INFO [backend.app.services.bambu_ftp] [-] FTP connected successfully to [IP] (model=[PRINTER], prot_c=False)
+2026-09-19 14:46:21,401 INFO [backend.app.services.bambu_ftp] [-] FTP connected successfully to [IP] (model=[PRINTER], prot_c=False)
+2026-09-19 14:46:52,226 INFO [backend.app.services.bambu_ftp] [-] FTP connected successfully to [IP] (model=[PRINTER], prot_c=False)
+2026-09-19 14:47:22,811 INFO [backend.app.services.bambu_ftp] [-] FTP connected successfully to [IP] (model=[PRINTER], prot_c=False)
+2026-09-19 14:47:53,434 INFO [backend.app.services.bambu_ftp] [-] FTP connected successfully to [IP] (model=[PRINTER], prot_c=False)
+2026-09-19 14:48:24,070 INFO [backend.app.services.bambu_ftp] [-] FTP connected successfully to [IP] (model=[PRINTER], prot_c=False)
+2026-09-19 14:48:54,728 INFO [backend.app.services.bambu_ftp] [-] FTP connected successfully to [IP] (model=[PRINTER], prot_c=False)
+2026-09-19 14:49:25,540 INFO [backend.app.services.bambu_ftp] [-] FTP connected successfully to [IP] (model=[PRINTER], prot_c=False)
+2026-09-19 14:49:56,145 INFO [backend.app.services.bambu_ftp] [-] FTP connected successfully to [IP] (model=[PRINTER], prot_c=False)
+2026-09-19 14:50:20,930 INFO [backend.app.main] [-] Recorded 1 AMS sensor history entries
+2026-09-19 14:50:26,735 INFO [backend.app.services.bambu_ftp] [-] FTP connected successfully to [IP] (model=[PRINTER], prot_c=False)
+2026-09-19 14:50:57,523 INFO [backend.app.services.bambu_ftp] [-] FTP connected successfully to [IP] (model=[PRINTER], prot_c=False)
+2026-09-19 14:51:28,361 INFO [backend.app.services.bambu_ftp] [-] FTP connected successfully to [IP] (model=[PRINTER], prot_c=False)
+2026-09-19 14:51:58,959 INFO [backend.app.services.bambu_ftp] [-] FTP connected successfully to [IP] (model=[PRINTER], prot_c=False)
+2026-09-19 14:52:29,623 INFO [backend.app.services.bambu_ftp] [-] FTP connected successfully to [IP] (model=[PRINTER], prot_c=False)
+2026-09-19 14:53:00,231 INFO [backend.app.services.bambu_ftp] [-] FTP connected successfully to [IP] (model=[PRINTER], prot_c=False)
+2026-09-19 14:53:31,070 INFO [backend.app.services.bambu_ftp] [-] FTP connected successfully to [IP] (model=[PRINTER], prot_c=False)
+2026-09-19 14:54:01,668 INFO [backend.app.services.bambu_ftp] [-] FTP connected successfully to [IP] (model=[PRINTER], prot_c=False)
+2026-09-19 14:54:32,281 INFO [backend.app.services.bambu_ftp] [-] FTP connected successfully to [IP] (model=[PRINTER], prot_c=False)
+2026-09-19 14:55:03,109 INFO [backend.app.services.bambu_ftp] [-] FTP connected successfully to [IP] (model=[PRINTER], prot_c=False)
+2026-09-19 14:55:20,935 INFO [backend.app.main] [-] Recorded 1 AMS sensor history entries
+2026-09-19 14:55:33,905 INFO [backend.app.services.bambu_ftp] [-] FTP connected successfully to [IP] (model=[PRINTER], prot_c=False)
+2026-09-19 14:55:34,140 WARNING [backend.app.main] [-] [TIMELAPSE] No new video appeared for archive 14 within 900s, giving up
+2026-09-19 14:56:08,685 INFO [backend.app.main] [-] [PHOTO-BG] Timelapse for archive 14 didn't land within 900s; falling back to live camera
+2026-09-19 14:56:08,685 INFO [backend.app.main] [-] [PHOTO-UPGRADE] No timelapse frame for archive 14; keeping the live grab
+2026-09-19 15:00:20,941 INFO [backend.app.main] [-] Recorded 1 AMS sensor history entries
+2026-09-19 15:05:20,948 INFO [backend.app.main] [-] Recorded 1 AMS sensor history entries
+2026-09-19 15:10:20,954 INFO [backend.app.main] [-] Recorded 1 AMS sensor history entries
+2026-09-19 15:15:20,960 INFO [backend.app.main] [-] Recorded 1 AMS sensor history entries
+2026-09-19 15:20:20,966 INFO [backend.app.main] [-] Recorded 1 AMS sensor history entries
+2026-09-19 15:25:20,972 INFO [backend.app.main] [-] Recorded 1 AMS sensor history entries
+2026-09-19 15:30:20,978 INFO [backend.app.main] [-] Recorded 1 AMS sensor history entries
+2026-09-19 15:31:24,371 INFO [uvicorn.access] [-] [IP]:65444 - "POST /api/v1/printers/camera/stream-token HTTP/1.1" 200
+2026-09-19 15:31:25,899 INFO [backend.app.api.routes.auth] [14c2623f] Setup completed: auth_enabled=False, admin_created=False
+2026-09-19 15:31:25,899 INFO [uvicorn.access] [-] [IP]:65444 - "POST /api/v1/auth/setup HTTP/1.1" 200
+2026-09-19 15:31:26,057 INFO [uvicorn.access] [-] [IP]:65451 - "POST /api/v1/auth/ws-token HTTP/1.1" 200
+2026-09-19 15:31:26,073 INFO [backend.app.api.routes.websocket] [-] WebSocket client connecting (principal=<anonymous>)
+2026-09-19 15:31:26,074 INFO [backend.app.api.routes.websocket] [-] WebSocket client connected
+2026-09-19 15:31:26,074 INFO [backend.app.api.routes.websocket] [-] Sent initial status for 1 printers
+2026-09-19 15:31:26,127 INFO [backend.app.api.routes.cloud] [c264ca46] get_filament_info called with 3 IDs: ['GFL96', 'GFL99', 'GFG99']
+2026-09-19 15:31:26,130 INFO [uvicorn.access] [-] [IP]:65451 - "POST /api/v1/cloud/filament-info HTTP/1.1" 200
+2026-09-19 15:31:26,140 INFO [uvicorn.access] [-] [IP]:65445 - "POST /api/v1/sponsor-prompt/dismiss HTTP/1.1" 204
+2026-09-19 15:35:20,984 INFO [backend.app.main] [-] Recorded 1 AMS sensor history entries
+2026-09-19 15:37:39,009 INFO [uvicorn.access] [-] [IP]:49934 - "POST /api/v1/maintenance/items/5/perform HTTP/1.1" 200
+2026-09-19 15:38:40,787 INFO [backend.app.api.routes.cloud] [525d4855] get_filament_info called with 3 IDs: ['GFL96', 'GFL99', 'GFG99']
+2026-09-19 15:38:40,802 INFO [uvicorn.access] [-] [IP]:50130 - "POST /api/v1/cloud/filament-info HTTP/1.1" 200
+2026-09-19 15:40:20,990 INFO [backend.app.main] [-] Recorded 1 AMS sensor history entries
+2026-09-19 15:41:41,982 INFO [backend.app.services.bambu_mqtt] [75ed3f6f] [[SERIAL]] Requesting K-profiles for nozzle_diameter=0.4 (attempt 1/3, seq_id=12)
+2026-09-19 15:41:42,068 INFO [backend.app.services.bambu_mqtt] [-] [[SERIAL]] K-profile response: nozzle=0.4, seq_id=12, 0 profiles, matched=True
+2026-09-19 15:41:42,068 INFO [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Got 0 K-profiles for nozzle=0.4
+2026-09-19 15:41:42,068 INFO [backend.app.services.bambu_mqtt] [75ed3f6f] [[SERIAL]] Got 0 K-profiles for nozzle=0.4 on attempt 1
+2026-09-19 15:41:42,245 WARNING [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Printer reported HMS 0500050000010007 (MQTT command verification failed): it is rejecting control commands, so prints, temperature changes and filament loads will be ignored. Enable Developer Mode on the printer and restart it.
+2026-09-19 15:41:43,543 INFO [backend.app.main] [-] [SNAPSHOT] Capturing fresh frame for printer 1
+2026-09-19 15:41:43,544 INFO [backend.app.services.camera] [-] Capturing camera frame bytes from [IP] using RTSP (model: [PRINTER])
+2026-09-19 15:41:43,618 ERROR [backend.app.services.camera] [-] ffmpeg frame bytes capture failed (code 183): [rtsp @ 0x603b93cb6280] Failed reading RTSP data: End of file
+[in#0 @ 0x603b93cb5fc0] Error opening input: Invalid data found when processing input
+Error opening input file rtsp://[CREDENTIALS]@[IP]:42743/streaming/live/1.
+Error opening input files: Invalid data found when processing input
+2026-09-19 15:42:02,537 INFO [uvicorn.access] [-] [IP]:50506 - "POST /api/v1/cloud/login HTTP/1.1" 200
+2026-09-19 15:42:13,632 INFO [uvicorn.access] [-] [IP]:50536 - "POST /api/v1/cloud/verify HTTP/1.1" 200
+2026-09-19 15:44:08,662 INFO [uvicorn.access] [-] [IP]:50769 - "POST /api/v1/cloud/settings HTTP/1.1" 200
+2026-09-19 15:45:20,995 INFO [backend.app.main] [-] Recorded 1 AMS sensor history entries
+2026-09-19 15:50:21,001 INFO [backend.app.main] [-] Recorded 1 AMS sensor history entries
+2026-09-19 15:52:06,238 INFO [uvicorn.access] [-] [IP]:52534 - "POST /api/v1/cloud/settings HTTP/1.1" 500
+2026-09-19 15:52:52,070 INFO [uvicorn.access] [-] [IP]:52623 - "POST /api/v1/cloud/settings HTTP/1.1" 500
+2026-09-19 15:53:04,020 INFO [backend.app.api.routes.websocket] [-] WebSocket client disconnected normally
+2026-09-19 15:53:04,449 INFO [uvicorn.access] [-] [IP]:52711 - "POST /api/v1/printers/camera/stream-token HTTP/1.1" 200
+2026-09-19 15:53:04,518 INFO [uvicorn.access] [-] [IP]:52738 - "POST /api/v1/auth/ws-token HTTP/1.1" 200
+2026-09-19 15:53:04,550 INFO [backend.app.api.routes.websocket] [-] WebSocket client connecting (principal=<anonymous>)
+2026-09-19 15:53:04,551 INFO [backend.app.api.routes.websocket] [-] WebSocket client connected
+2026-09-19 15:53:04,551 INFO [backend.app.api.routes.websocket] [-] Sent initial status for 1 printers
+2026-09-19 15:53:08,420 INFO [backend.app.services.bambu_mqtt] [a7c1bbdf] [[SERIAL]] Requesting K-profiles for nozzle_diameter=0.4 (attempt 1/3, seq_id=13)
+2026-09-19 15:53:08,450 INFO [backend.app.services.bambu_mqtt] [-] [[SERIAL]] K-profile response: nozzle=0.4, seq_id=13, 0 profiles, matched=True
+2026-09-19 15:53:08,450 INFO [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Got 0 K-profiles for nozzle=0.4
+2026-09-19 15:53:08,451 INFO [backend.app.services.bambu_mqtt] [a7c1bbdf] [[SERIAL]] Got 0 K-profiles for nozzle=0.4 on attempt 1
+2026-09-19 15:53:08,558 INFO [backend.app.services.bambu_mqtt] [b344691a] [[SERIAL]] Requesting K-profiles for nozzle_diameter=0.4 (attempt 1/3, seq_id=14)
+2026-09-19 15:53:08,588 INFO [backend.app.services.bambu_mqtt] [-] [[SERIAL]] K-profile response: nozzle=0.4, seq_id=14, 0 profiles, matched=True
+2026-09-19 15:53:08,588 INFO [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Got 0 K-profiles for nozzle=0.4
+2026-09-19 15:53:08,588 INFO [backend.app.services.bambu_mqtt] [b344691a] [[SERIAL]] Got 0 K-profiles for nozzle=0.4 on attempt 1
+2026-09-19 15:53:14,116 INFO [uvicorn.access] [-] [IP]:52711 - "POST /api/v1/local-presets/import HTTP/1.1" 200
+2026-09-19 15:53:17,927 INFO [uvicorn.access] [-] [IP]:52711 - "POST /api/v1/local-presets/import HTTP/1.1" 200
+2026-09-19 15:55:21,008 INFO [backend.app.main] [-] Recorded 1 AMS sensor history entries
+2026-09-19 16:00:21,013 INFO [backend.app.main] [-] Recorded 1 AMS sensor history entries
+2026-09-19 16:05:21,018 INFO [backend.app.main] [-] Recorded 1 AMS sensor history entries
+2026-09-19 16:10:21,024 INFO [backend.app.main] [-] Recorded 1 AMS sensor history entries
+2026-09-19 16:13:48,060 INFO [uvicorn.access] [-] [IP]:55438 - "POST /api/v1/printers/camera/stream-token HTTP/1.1" 200
+2026-09-19 16:13:54,549 INFO [uvicorn.access] [-] [IP]:55453 - "POST /api/v1/printers/camera/stream-token HTTP/1.1" 200
+2026-09-19 16:13:56,018 INFO [backend.app.api.routes.auth] [59d274a3] Setup completed: auth_enabled=False, admin_created=False
+2026-09-19 16:13:56,018 INFO [uvicorn.access] [-] [IP]:55454 - "POST /api/v1/auth/setup HTTP/1.1" 200
+2026-09-19 16:13:56,168 INFO [uvicorn.access] [-] [IP]:55455 - "POST /api/v1/auth/ws-token HTTP/1.1" 200
+2026-09-19 16:13:56,190 INFO [backend.app.api.routes.websocket] [-] WebSocket client connecting (principal=<anonymous>)
+2026-09-19 16:13:56,190 INFO [backend.app.api.routes.websocket] [-] WebSocket client connected
+2026-09-19 16:13:56,191 INFO [backend.app.api.routes.websocket] [-] Sent initial status for 1 printers
+2026-09-19 16:13:56,226 INFO [backend.app.api.routes.cloud] [51245327] get_filament_info called with 3 IDs: ['GFL96', 'GFL99', 'GFG99']
+2026-09-19 16:13:56,768 INFO [uvicorn.access] [-] [IP]:55456 - "POST /api/v1/cloud/filament-info HTTP/1.1" 200
+2026-09-19 16:14:10,908 INFO [uvicorn.access] [-] [IP]:55475 - "DELETE /api/v1/archives/14 HTTP/1.1" 200
+2026-09-19 16:14:15,522 INFO [uvicorn.access] [-] [IP]:55475 - "DELETE /api/v1/archives/12 HTTP/1.1" 200
+2026-09-19 16:15:21,029 INFO [backend.app.main] [-] Recorded 1 AMS sensor history entries
+2026-09-19 16:18:01,108 INFO [backend.app.services.bambu_mqtt] [3402051b] [[SERIAL]] Requesting K-profiles for nozzle_diameter=0.4 (attempt 1/3, seq_id=15)
+2026-09-19 16:18:01,136 INFO [backend.app.services.bambu_mqtt] [-] [[SERIAL]] K-profile response: nozzle=0.4, seq_id=15, 0 profiles, matched=True
+2026-09-19 16:18:01,137 INFO [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Got 0 K-profiles for nozzle=0.4
+2026-09-19 16:18:01,137 INFO [backend.app.services.bambu_mqtt] [3402051b] [[SERIAL]] Got 0 K-profiles for nozzle=0.4 on attempt 1
+2026-09-19 16:18:01,244 INFO [backend.app.services.bambu_mqtt] [e5c5116f] [[SERIAL]] Requesting K-profiles for nozzle_diameter=0.4 (attempt 1/3, seq_id=16)
+2026-09-19 16:18:01,273 INFO [backend.app.services.bambu_mqtt] [-] [[SERIAL]] K-profile response: nozzle=0.4, seq_id=16, 0 profiles, matched=True
+2026-09-19 16:18:01,273 INFO [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Got 0 K-profiles for nozzle=0.4
+2026-09-19 16:18:01,274 INFO [backend.app.services.bambu_mqtt] [e5c5116f] [[SERIAL]] Got 0 K-profiles for nozzle=0.4 on attempt 1
+2026-09-19 16:18:07,093 INFO [backend.app.services.bambu_mqtt] [ee357b2a] [[SERIAL]] Requesting K-profiles for nozzle_diameter=0.4 (attempt 1/3, seq_id=17)
+2026-09-19 16:18:07,121 INFO [backend.app.services.bambu_mqtt] [-] [[SERIAL]] K-profile response: nozzle=0.4, seq_id=17, 0 profiles, matched=True
+2026-09-19 16:18:07,121 INFO [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Got 0 K-profiles for nozzle=0.4
+2026-09-19 16:18:07,121 INFO [backend.app.services.bambu_mqtt] [ee357b2a] [[SERIAL]] Got 0 K-profiles for nozzle=0.4 on attempt 1
+2026-09-19 16:18:09,067 INFO [backend.app.services.bambu_mqtt] [9c3bcaa1] [[SERIAL]] Requesting K-profiles for nozzle_diameter=0.4 (attempt 1/3, seq_id=18)
+2026-09-19 16:18:09,095 INFO [backend.app.services.bambu_mqtt] [-] [[SERIAL]] K-profile response: nozzle=0.4, seq_id=18, 0 profiles, matched=True
+2026-09-19 16:18:09,096 INFO [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Got 0 K-profiles for nozzle=0.4
+2026-09-19 16:18:09,096 INFO [backend.app.services.bambu_mqtt] [9c3bcaa1] [[SERIAL]] Got 0 K-profiles for nozzle=0.4 on attempt 1
+2026-09-19 16:18:14,412 INFO [backend.app.services.bambu_mqtt] [2db8ca76] [[SERIAL]] Requesting K-profiles for nozzle_diameter=0.4 (attempt 1/3, seq_id=19)
+2026-09-19 16:18:14,439 INFO [backend.app.services.bambu_mqtt] [-] [[SERIAL]] K-profile response: nozzle=0.4, seq_id=19, 0 profiles, matched=True
+2026-09-19 16:18:14,440 INFO [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Got 0 K-profiles for nozzle=0.4
+2026-09-19 16:18:14,440 INFO [backend.app.services.bambu_mqtt] [2db8ca76] [[SERIAL]] Got 0 K-profiles for nozzle=0.4 on attempt 1
+2026-09-19 16:18:55,799 INFO [uvicorn.access] [-] [IP]:55969 - "POST /api/v1/finance/rebuild-balance-ledger HTTP/1.1" 401
+2026-09-19 16:19:03,653 INFO [backend.app.api.routes.cloud] [dcf15e1f] get_filament_info called with 3 IDs: ['GFL96', 'GFL99', 'GFG99']
+2026-09-19 16:19:04,198 INFO [uvicorn.access] [-] [IP]:56102 - "POST /api/v1/cloud/filament-info HTTP/1.1" 200
+2026-09-19 16:20:21,036 INFO [backend.app.main] [-] Recorded 1 AMS sensor history entries
+2026-09-19 16:22:44,127 INFO [backend.app.services.bambu_mqtt] [-] [[SERIAL]] HMS 0500050000010007 cleared — re-probing developer mode
+2026-09-19 16:23:59,680 INFO [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Print destination from the report topic: https://or-cloud-upload-prod.s3.us-west-2.amazonaws.com/users/3843364292/models/20260919142354.916/US92aa1d5f267e58_1009356302_1.3mf?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAXY6FH2ERKZDBWCUW%2F20260919%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20260919T062358Z&X-Amz-Expires=3600&X-Amz-SignedHeaders=host&X-Amz-Signature=1279709615cf22cabf96312ed292d69cc07e553e432fca2237eb0673600cbbb9
+2026-09-19 16:23:59,680 INFO [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Captured ams_mapping from print response: [0, -1, -1, -1, -1]
+2026-09-19 16:23:59,680 INFO [backend.app.services.bambu_mqtt] [-] [[SERIAL]] AMS Filament Backup: OFF
+2026-09-19 16:23:59,863 INFO [backend.app.services.bambu_mqtt] [-] [[SERIAL]] AMS Filament Backup: ON
+2026-09-19 16:24:04,592 INFO [backend.app.services.bambu_mqtt] [-] [[SERIAL]] PRINT START detected - file: /data/Metadata/plate_1.gcode, subtask: P2S (10 mm höher) / ohne Purge Line Ecke / mit Logo, is_new: True, is_file_change: False
+2026-09-19 16:24:04,592 INFO [backend.app.main] [-] [CALLBACK] on_print_start called for printer 1, data keys: ['filename', 'subtask_name', 'remaining_time', 'raw_data', 'ams_mapping']
+2026-09-19 16:24:04,600 INFO [backend.app.services.usage_tracker] [-] [UsageTracker] Skipped trays with invalid remain% for printer 1: AMS0-T0(remain=-1), AMS0-T1(remain=-1), AMS0-T2(remain=-1), AMS0-T3(remain=-1)
+2026-09-19 16:24:04,600 INFO [backend.app.services.usage_tracker] [-] [UsageTracker] PRINT START printer 1: mapping=[0], tray_now=255, last_loaded_tray=3
+2026-09-19 16:24:04,600 INFO [backend.app.services.usage_tracker] [-] [UsageTracker] PRINT START printer 1: mapping-related keys: {'mapping': [0], 'ams_extruder_map': {'0': 1}}
+2026-09-19 16:24:04,600 INFO [backend.app.services.usage_tracker] [-] [UsageTracker] PRINT START printer 1 AMS 0: T0(type=PLA, color=898989FF, now=?, tar=?), T1(type=PLA, color=FFFFFFFF, now=?, tar=?), T2(type=PETG, color=161616FF, now=?, tar=?), T3(type=PLA, color=FFF144FF, now=?, tar=?)
+2026-09-19 16:24:04,603 INFO [backend.app.services.usage_tracker] [-] [UsageTracker] Captured start remain% for printer 1 (2 trays): {'255-0': 0, '255-1': 0}
+2026-09-19 16:24:04,605 INFO [backend.app.main] [-] [PLATE CHECK] printer_id=1, plate_detection_enabled=False
+2026-09-19 16:24:04,605 INFO [backend.app.main] [-] [CALLBACK] Print start detected - filename: /data/Metadata/plate_1.gcode, subtask: P2S (10 mm höher) / ohne Purge Line Ecke / mit Logo
+2026-09-19 16:24:04,607 INFO [backend.app.main] [-] Trying filenames: ['P2S (10 mm höher) / ohne Purge Line Ecke / mit Logo.gcode.3mf', 'P2S (10 mm höher) / ohne Purge Line Ecke / mit Logo.3mf', 'plate_1.gcode.3mf', 'plate_1.3mf', 'P2S_(10_mm_höher)_/_ohne_Purge_Line_Ecke_/_mit_Logo.gcode.3mf', 'P2S_(10_mm_höher)_/_ohne_Purge_Line_Ecke_/_mit_Logo.3mf']
+2026-09-19 16:24:04,610 INFO [backend.app.main] [-] Skipping the 3MF lookup for printer 1: internal_storage — the print file is not on storage Bambuddy can read over FTPS, so no path would find it
+2026-09-19 16:24:04,610 WARNING [backend.app.main] [-] Could not find 3MF file for print: /data/Metadata/plate_1.gcode
+2026-09-19 16:24:04,613 INFO [backend.app.main] [-] Created fallback archive 15 for  mit Logo (no 3MF available)
+2026-09-19 16:24:04,613 INFO [backend.app.main] [-] [ENERGY] No smart plug for printer 1 (archive 15)
+2026-09-19 16:24:04,616 INFO [backend.app.main] [-] [SNAPSHOT] Capturing fresh frame for printer 1
+2026-09-19 16:24:04,616 INFO [backend.app.services.camera] [-] Capturing camera frame bytes from [IP] using RTSP (model: [PRINTER])
+2026-09-19 16:24:04,698 ERROR [backend.app.services.camera] [-] ffmpeg frame bytes capture failed (code 183): [rtsp @ 0x5faf11021280] Failed reading RTSP data: End of file
+[in#0 @ 0x5faf11020fc0] Error opening input: Invalid data found when processing input
+Error opening input file rtsp://[CREDENTIALS]@[IP]:45863/streaming/live/1.
+Error opening input files: Invalid data found when processing input
+2026-09-19 16:24:04,698 INFO [backend.app.services.notification_service] [-] on_print_start called for printer 1 ([PRINTER])
+2026-09-19 16:24:04,699 INFO [backend.app.services.notification_service] [-] No notification providers configured for print_start event on printer 1
+2026-09-19 16:24:04,897 INFO [uvicorn.access] [-] [IP]:57043 - "POST /api/v1/makerworld/resolve HTTP/1.1" 200
+2026-09-19 16:24:05,273 INFO [backend.app.services.bambu_ftp] [-] FTP connected successfully to [IP] (model=[PRINTER], prot_c=False)
+2026-09-19 16:24:05,304 INFO [backend.app.main] [-] [TIMELAPSE] Baseline at print start: 14 video files for printer 1
+2026-09-19 16:24:15,018 INFO [uvicorn.access] [-] [IP]:57042 - "POST /api/v1/makerworld/import HTTP/1.1" 200
+2026-09-19 16:24:17,474 INFO [uvicorn.access] [-] [IP]:57042 - "POST /api/v1/library/files/1/slicer-token HTTP/1.1" 200
+2026-09-19 16:24:19,445 INFO [backend.app.api.routes.websocket] [-] WebSocket client disconnected normally
+2026-09-19 16:24:20,054 INFO [uvicorn.access] [-] [IP]:57042 - "POST /api/v1/printers/camera/stream-token HTTP/1.1" 200
+2026-09-19 16:24:20,181 INFO [uvicorn.access] [-] [IP]:57091 - "POST /api/v1/auth/ws-token HTTP/1.1" 200
+2026-09-19 16:24:20,194 INFO [backend.app.api.routes.websocket] [-] WebSocket client connecting (principal=<anonymous>)
+2026-09-19 16:24:20,194 INFO [backend.app.api.routes.websocket] [-] WebSocket client connected
+2026-09-19 16:24:20,195 INFO [backend.app.api.routes.websocket] [-] Sent initial status for 1 printers
+2026-09-19 16:24:27,645 INFO [uvicorn.access] [-] [IP]:57089 - "PUT /api/v1/library/files/1 HTTP/1.1" 200
+2026-09-19 16:25:07,093 INFO [uvicorn.access] [-] [IP]:57161 - "PUT /api/v1/settings/ HTTP/1.1" 200
+2026-09-19 16:25:11,369 INFO [uvicorn.access] [-] [IP]:57161 - "PUT /api/v1/settings/ HTTP/1.1" 200
+2026-09-19 16:25:14,383 INFO [uvicorn.access] [-] [IP]:57161 - "PUT /api/v1/settings/ HTTP/1.1" 200
+2026-09-19 16:25:14,468 INFO [uvicorn.access] [-] [IP]:57161 - "PUT /api/v1/settings/ HTTP/1.1" 200
+2026-09-19 16:25:21,042 INFO [backend.app.main] [-] Recorded 1 AMS sensor history entries
+2026-09-19 16:25:22,523 INFO [uvicorn.access] [-] [IP]:57161 - "PUT /api/v1/settings/ HTTP/1.1" 200
+2026-09-19 16:25:23,827 INFO [backend.app.services.local_backup] [4b8083a0] Local backup created: /app/data/backups/bambuddy-backup-20260919-162522.zip
+2026-09-19 16:25:23,828 INFO [uvicorn.access] [-] [IP]:57161 - "POST /api/v1/local-backup/run HTTP/1.1" 200
+2026-09-19 16:25:32,670 INFO [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Tray change during print: tray=254 at layer=0
+2026-09-19 16:25:56,969 INFO [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Tray change during print: tray=0 at layer=0
+2026-09-19 16:26:08,816 INFO [backend.app.api.routes.support] [0de8f2da] Log level changed to DEBUG
+2026-09-19 16:26:08,816 INFO [backend.app.api.routes.bug_report] [0de8f2da] Bug report: enabled debug logging
+2026-09-19 16:26:08,816 DEBUG [backend.app.services.bambu_mqtt] [0de8f2da] [[SERIAL]] Requesting status update (pushall)
+2026-09-19 16:26:08,817 INFO [uvicorn.access] [-] [IP]:57290 - "POST /api/v1/bug-report/start-logging HTTP/1.1" 200
+2026-09-19 16:26:09,714 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Found xcam inside print data: {'allow_skip_parts': False, 'buildplate_marker_detector': True, 'cfg': 8089015, 'first_layer_inspector': True, 'halt_print_sensitivity': 'medium', 'print_halt': True, 'printing_monitor': True, 'spaghetti_detector': True}
+2026-09-19 16:26:09,715 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Parsing xcam data - all fields: ['allow_skip_parts', 'buildplate_marker_detector', 'cfg', 'first_layer_inspector', 'halt_print_sensitivity', 'print_halt', 'printing_monitor', 'spaghetti_detector']
+2026-09-19 16:26:09,715 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] xcam cfg bitmask: 8089015 (binary: 0b11110110110110110110111)
+2026-09-19 16:26:09,715 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Received gcode_state: RUNNING, gcode_file: /data/Metadata/plate_1.gcode, subtask_name: P2S (10 mm höher) / ohne Purge Line Ecke / mit Logo
+2026-09-19 16:26:09,715 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] AMS dict fields: {'ams_exist_bits': '1', 'ams_exist_bits_raw': '1', 'cali_id': 255, 'cali_stat': 0, 'cfs': [2, 9, 5, 7], 'insert_flag': True, 'power_on_flag': True, 'tray_exist_bits': 'f', 'tray_hall_out_bits': '1', 'tray_is_bbl_bits': 'f', 'tray_now': '0', 'tray_pre': '0', 'tray_read_done_bits': 'f', 'tray_reading_bits': '0', 'tray_tar': '0', 'unbind_ams_stat': 0, 'version': 4238}
+2026-09-19 16:26:09,715 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] tray_now updated: 0
+2026-09-19 16:26:09,715 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Merged AMS data: 1 new units, 1 total
+2026-09-19 16:26:09,715 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] AMS 0 info=0x11001103 -> extruder 1
+2026-09-19 16:26:09,715 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] ams_extruder_map: {'0': 1}
+2026-09-19 16:26:09,715 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] ams_status: 258 (main=1, sub=2)
+2026-09-19 16:26:09,716 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Received command response: push_status
+2026-09-19 16:26:09,716 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] device.extruder.state=557330 (switch_state bits 12-14: 0)
+2026-09-19 16:26:09,716 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] info.temp direct: 30°C (heater OFF)
+2026-09-19 16:26:09,716 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] ctc_info keys: ['temp']
+2026-09-19 16:26:09,717 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Chamber heating calculated: target=0.0, current=30.0, heating=False, respect_local=False
+2026-09-19 16:26:09,717 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] Chamber temp updated to: 30.0, target: 0.0, heating: False
+2026-09-19 16:26:09,718 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] HMS data received: []
+2026-09-19 16:26:09,718 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] ipcam field: {'agora_service': 'disable', 'brtc_service': 'enable', 'bs_state': 0, 'cap_pic_enable': 'enable', 'ipcam_dev': '1', 'ipcam_record': 'enable', 'laser_preview_res': 7, 'liveview_preview': True, 'mode_bits': 2, 'resolution': '1080p', 'rtsp_url': 'disable', 'timelapse': 'disable', 'tl_external_free_kb': 2483584, 'tl_external_total_kb': 15625192, 'tl_internal_free_kb': 912769, 'tl_internal_total_kb': 962560, 'tl_store_hpd_type': 2, 'tl_store_path_type': 2, 'tutk_server': 'enable'}
+2026-09-19 16:26:09,718 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] wifi_signal received: -50dBm
+2026-09-19 16:26:09,718 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] lights_report: [{'mode': 'on', 'node': 'chamber_light'}, {'mode': 'flashing', 'node': 'work_light'}]
+2026-09-19 16:26:09,718 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] MQTT mapping field: [0]
+2026-09-19 16:26:09,718 DEBUG [backend.app.services.bambu_mqtt] [-] [[SERIAL]] gcode_state: RUNNING -> RUNNING, file: /data/Metadata/plate_1.gcode, subtask: P2S (10 mm höher) / ohne Purge Line Ecke / mit Logo
