@@ -85,6 +85,7 @@ class SpoolBase(BaseModel):
     extra_colors: str | None = None
     effect_type: str | None = None
     brand: str | None = None
+    barcode: str | None = Field(default=None, max_length=128)
 
     @field_validator("extra_colors")
     @classmethod
@@ -95,6 +96,12 @@ class SpoolBase(BaseModel):
     @classmethod
     def _validate_effect_type(cls, v: str | None) -> str | None:
         return normalize_effect_type(v)
+
+    @field_validator("barcode")
+    @classmethod
+    def _normalise_barcode(cls, v: str | None) -> str | None:
+        cleaned = (v or "").strip()
+        return cleaned or None
 
     label_weight: int = 1000
     core_weight: int = 250
@@ -145,6 +152,7 @@ class SpoolUpdate(BaseModel):
     extra_colors: str | None = None
     effect_type: str | None = None
     brand: str | None = None
+    barcode: str | None = Field(default=None, max_length=128)
 
     @field_validator("extra_colors")
     @classmethod
@@ -155,6 +163,12 @@ class SpoolUpdate(BaseModel):
     @classmethod
     def _validate_effect_type(cls, v: str | None) -> str | None:
         return normalize_effect_type(v)
+
+    @field_validator("barcode")
+    @classmethod
+    def _normalise_barcode(cls, v: str | None) -> str | None:
+        cleaned = (v or "").strip()
+        return cleaned or None
 
     label_weight: int | None = None
     core_weight: int | None = None

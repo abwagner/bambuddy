@@ -25,6 +25,10 @@ class Spool(Base):
     # glow, matte. Purely a rendering hint — does not affect MQTT/firmware.
     effect_type: Mapped[str | None] = mapped_column(String(20))
     brand: Mapped[str | None] = mapped_column(String(100))  # "Polymaker"
+    # Retail/product barcode (UPC/EAN/Code 128, etc.). Non-unique because every
+    # physical spool of the same SKU carries the same code; the newest matching
+    # spool becomes the local template for the next camera scan.
+    barcode: Mapped[str | None] = mapped_column(String(128), index=True)
     label_weight: Mapped[int] = mapped_column(Integer, default=1000)  # Advertised net weight (g)
     core_weight: Mapped[int] = mapped_column(Integer, default=250)  # Empty spool weight (g)
     core_weight_catalog_id: Mapped[int | None] = mapped_column(

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
-import { X, ExternalLink, Box, Cog, Loader2, Layers, Check, Maximize2, Minimize2, ChevronDown } from 'lucide-react';
+import { X, ExternalLink, Box, Cog, Loader2, Layers, Check, Maximize2, Minimize2, ChevronDown, Pencil } from 'lucide-react';
 import { ModelViewer } from './ModelViewer';
 import { Button } from './Button';
 import { api, withStreamToken } from '../api/client';
@@ -23,6 +23,9 @@ interface ModelViewerModalProps {
   // externally — so the preview modal's slice action matches the file row's
   // Cog (in-app Bambuddy SliceModal) when the slicer API is enabled.
   onSliceWithBambuddy?: () => void;
+  // Opens the browser-native plate editor. The selected plate is passed when
+  // the source is a multi-plate 3MF; null means edit the complete build.
+  onEditLayout?: (plateId: number | null) => void;
 }
 
 interface Capabilities {
@@ -122,7 +125,7 @@ function SlicerSplitButton({ icon, label, dropdownLabel, onPrimary, items }: Sli
   );
 }
 
-export function ModelViewerModal({ archiveId, libraryFileId, title, fileType, onClose, onSliceWithBambuddy }: ModelViewerModalProps) {
+export function ModelViewerModal({ archiveId, libraryFileId, title, fileType, onClose, onSliceWithBambuddy, onEditLayout }: ModelViewerModalProps) {
   const { t } = useTranslation();
   const { showToast } = useToast();
   const { data: settings } = useQuery({ queryKey: ['settings'], queryFn: api.getSettings });
@@ -448,6 +451,17 @@ export function ModelViewerModal({ archiveId, libraryFileId, title, fileType, on
             )}
           </div>
           <div className="flex items-center gap-2">
+            {onEditLayout && isLibrary && isApiSliceableFileType(fileType) && (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => onEditLayout(selectedPlateId)}
+                title="Edit build plate"
+              >
+                <Pencil className="w-4 h-4" />
+                Edit plate
+              </Button>
+            )}
             {useBambuddySlicer ? (
               <SlicerSplitButton
                 icon={<Cog className="w-4 h-4" />}

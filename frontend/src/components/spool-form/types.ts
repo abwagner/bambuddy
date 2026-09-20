@@ -24,6 +24,7 @@ export interface SpoolFormData {
   material: string;
   subtype: string;
   brand: string;
+  barcode?: string;
   color_name: string;
   rgba: string;
   // #1154: extra gradient stops + visual effect. Stored as the canonical
@@ -51,6 +52,7 @@ export const defaultFormData: SpoolFormData = {
   material: '',
   subtype: '',
   brand: '',
+  barcode: '',
   color_name: '',
   rgba: '808080FF',
   extra_colors: '',

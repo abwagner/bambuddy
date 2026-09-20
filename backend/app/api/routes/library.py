@@ -4,6 +4,7 @@ import base64
 import binascii
 import contextlib
 import hashlib
+import io
 import json
 import logging
 import os
@@ -395,6 +396,67 @@ def _resolve_slice_destination(target_folder: LibraryFolder | None, out_filename
         # must land in managed storage, never outside it.
         return get_library_files_dir() / f"{uuid.uuid4().hex}.gcode.3mf", False, "external_invalid_name"
     return dest, True, None
+
+
+SLICED_OUTPUT_FOLDER_NAME = "Sliced"
+
+
+async def _get_sliced_output_folder(
+    db: AsyncSession, target_folder: LibraryFolder | None
+) -> LibraryFolder | None:
+    """Return the dedicated folder for a library slice.
+
+    Source models stay where the user put them. New slice results go into a
+    sibling child named ``Sliced`` so a model folder does not become a mixed
+    source/output directory. Existing folders are reused, including when a
+    sliced file is re-sliced. For an external folder, the child directory is
+    created only when the mount is currently writable; otherwise the original
+    folder remains the honest destination and the normal managed-storage
+    fallback rules still apply.
+    """
+    if target_folder is not None and target_folder.name.casefold() == SLICED_OUTPUT_FOLDER_NAME.casefold():
+        return target_folder
+
+    parent_id = target_folder.id if target_folder is not None else None
+    existing_result = await db.execute(
+        select(LibraryFolder).where(
+            LibraryFolder.parent_id == parent_id,
+            func.lower(LibraryFolder.name) == SLICED_OUTPUT_FOLDER_NAME.casefold(),
+        )
+    )
+    existing = existing_result.scalar_one_or_none()
+    if existing is not None:
+        return existing
+
+    if target_folder is not None and target_folder.is_external:
+        if (
+            target_folder.external_readonly
+            or not target_folder.external_path
+            or not Path(target_folder.external_path).is_dir()
+            or not os.access(target_folder.external_path, os.W_OK)
+        ):
+            return target_folder
+        external_path = Path(target_folder.external_path) / SLICED_OUTPUT_FOLDER_NAME
+        try:
+            external_path = external_path.resolve()
+            external_path.relative_to(Path(target_folder.external_path).resolve())
+            external_path.mkdir(parents=True, exist_ok=True)
+        except (OSError, ValueError):
+            return target_folder
+        folder = LibraryFolder(
+            name=SLICED_OUTPUT_FOLDER_NAME,
+            parent_id=parent_id,
+            is_external=True,
+            external_path=str(external_path),
+            external_readonly=target_folder.external_readonly,
+            external_show_hidden=target_folder.external_show_hidden,
+        )
+    else:
+        folder = LibraryFolder(name=SLICED_OUTPUT_FOLDER_NAME, parent_id=parent_id)
+
+    db.add(folder)
+    await db.flush()
+    return folder
 
 
 async def _folder_tree_file_ids(db: AsyncSession, folder_id: int) -> list[int]:
@@ -4114,7 +4176,11 @@ async def _run_slicer_with_fallback(
     # is a union with the cross-class decision above — a user opt-out must
     # not be able to switch off the flag that keeps a class-crossing slice
     # from crashing — while orient is user-driven only.
-    arrange_flag = cross_class_arrange or request.auto_arrange
+    # Repetitions create overlapping copies unless the slicer is also allowed
+    # to place them. Treat copies > 1 as an implicit arrange request; the same
+    # per-plate loop below protects multi-plate projects from project-wide
+    # consolidation.
+    arrange_flag = cross_class_arrange or request.auto_arrange or request.copies > 1
     orient_flag = request.auto_orient
     # When this slice is dispatcher-tracked, generate a request_id so
     # the sidecar publishes progress under it, and wire a callback that
@@ -4246,6 +4312,10 @@ async def _run_slicer_with_fallback(
                             export_3mf=True,
                             arrange=True,
                             orient=orient_flag,
+                            copies=request.copies,
+                            rotation_x=request.rotation_x,
+                            rotation_y=request.rotation_y,
+                            rotation_z=request.rotation_z,
                             request_id=progress_request_id,
                             on_progress=plate_cb,
                         )
@@ -4260,6 +4330,10 @@ async def _run_slicer_with_fallback(
                             export_3mf=True,
                             arrange=True,
                             orient=orient_flag,
+                            copies=request.copies,
+                            rotation_x=request.rotation_x,
+                            rotation_y=request.rotation_y,
+                            rotation_z=request.rotation_z,
                             request_id=progress_request_id,
                             on_progress=plate_cb,
                         )
@@ -4301,6 +4375,10 @@ async def _run_slicer_with_fallback(
                     export_3mf=request.export_3mf,
                     arrange=arrange_flag,
                     orient=orient_flag,
+                    copies=request.copies,
+                    rotation_x=request.rotation_x,
+                    rotation_y=request.rotation_y,
+                    rotation_z=request.rotation_z,
                     request_id=progress_request_id,
                     on_progress=progress_callback,
                 )
@@ -4316,6 +4394,10 @@ async def _run_slicer_with_fallback(
                     export_3mf=request.export_3mf,
                     arrange=arrange_flag,
                     orient=orient_flag,
+                    copies=request.copies,
+                    rotation_x=request.rotation_x,
+                    rotation_y=request.rotation_y,
+                    rotation_z=request.rotation_z,
                     request_id=progress_request_id,
                     on_progress=progress_callback,
                 )
@@ -4367,6 +4449,10 @@ async def _run_slicer_with_fallback(
                 export_3mf=request.export_3mf,
                 arrange=arrange_flag,
                 orient=orient_flag,
+                copies=request.copies,
+                rotation_x=request.rotation_x,
+                rotation_y=request.rotation_y,
+                rotation_z=request.rotation_z,
                 request_id=progress_request_id,
                 on_progress=progress_callback,
             )
@@ -4499,8 +4585,10 @@ async def slice_and_persist(
     current_user_id: int | None,
     job_id: int | None = None,
 ) -> SliceResponse:
-    """Slice a model and save the result as a new ``LibraryFile`` in
-    ``folder_id`` (same folder as the source by convention).
+    """Slice a model and save the result as a new ``LibraryFile``.
+
+    Source models stay in their current folder; successful results go into a
+    dedicated ``Sliced`` child folder.
 
     Always exports as ``.gcode.3mf`` so the existing library thumbnail
     pipeline works on the new file. Plain ``.gcode`` would have no
@@ -4534,10 +4622,23 @@ async def slice_and_persist(
     if folder_id is not None:
         folder_result = await db.execute(select(LibraryFolder).where(LibraryFolder.id == folder_id))
         target_folder = folder_result.scalar_one_or_none()
-    out_path, out_is_external, external_fallback = _resolve_slice_destination(target_folder, out_filename)
+    # BS/Orca CLIs skip plate_N.png in headless --export-3mf — render +
+    # inject server-side so the library card has a thumbnail. Best-effort:
+    # no-op when the slicer did embed thumbs (desktop Studio path), and
+    # falls through to the unmodified bytes on any render error.
+    result = result._replace(content=inject_plate_thumbnails_if_missing(result.content))
+    if not zipfile.is_zipfile(io.BytesIO(result.content)):
+        raise HTTPException(
+            status_code=502,
+            detail="Slicer returned an invalid 3MF; the failed slice was not saved.",
+        )
+
+    # Keep source models and generated output separate. Do this only after the
+    # slicer payload has passed validation, so a failed job does not even leave
+    # an empty Sliced folder behind.
+    output_folder = await _get_sliced_output_folder(db, target_folder)
+    out_path, out_is_external, external_fallback = _resolve_slice_destination(output_folder, out_filename)
     if out_is_external:
-        # _unique_external_name may have suffixed it; the library row has to
-        # show the name the file actually has on the share, or the two drift.
         out_filename = out_path.name
     if external_fallback:
         logger.warning(
@@ -4546,12 +4647,17 @@ async def slice_and_persist(
             target_folder.external_path if target_folder else None,
             external_fallback,
         )
-    # BS/Orca CLIs skip plate_N.png in headless --export-3mf — render +
-    # inject server-side so the library card has a thumbnail. Best-effort:
-    # no-op when the slicer did embed thumbs (desktop Studio path), and
-    # falls through to the unmodified bytes on any render error.
-    result = result._replace(content=inject_plate_thumbnails_if_missing(result.content))
-    out_path.write_bytes(result.content)
+
+    # Write atomically. A client must never discover a partially written or
+    # invalid output while a slice job is still being finalized.
+    temporary_path = out_path.with_name(f".{out_path.name}.{uuid.uuid4().hex}.tmp")
+    try:
+        temporary_path.write_bytes(result.content)
+        os.replace(temporary_path, out_path)
+    except Exception:
+        with contextlib.suppress(OSError):
+            temporary_path.unlink()
+        raise
 
     # Extract thumbnail from the produced 3MF so the library card shows a
     # preview. Failures here aren't fatal — the file is still useful
@@ -4599,7 +4705,7 @@ async def slice_and_persist(
         metadata.update(extra_metadata)
 
     new_file = LibraryFile(
-        folder_id=folder_id,
+        folder_id=output_folder.id if output_folder is not None else None,
         is_external=out_is_external,
         filename=out_filename,
         file_path=_stored_file_path(out_path, out_is_external),
@@ -4693,13 +4799,25 @@ async def slice_and_persist_as_archive(
     # around it. Checked before mkdir so a rejected path creates nothing.
     assert_under(app_settings.archive_dir, archive_dir, http=False)
     assert_under(app_settings.archive_dir, out_path, http=False)
+    result = result._replace(content=inject_plate_thumbnails_if_missing(result.content))
+    if not zipfile.is_zipfile(io.BytesIO(result.content)):
+        raise HTTPException(
+            status_code=502,
+            detail="Slicer returned an invalid 3MF; the failed slice was not saved.",
+        )
     archive_dir.mkdir(parents=True, exist_ok=True)
     # See library-slice path: BS/Orca sidecar CLIs don't embed plate_N.png
     # in headless --export-3mf, so the produced 3MF often has no thumbnail
     # at all. Server-side render fills the gap; no-op when the slicer did
     # embed (desktop Studio path) and best-effort on any render error.
-    result = result._replace(content=inject_plate_thumbnails_if_missing(result.content))
-    out_path.write_bytes(result.content)
+    temporary_path = out_path.with_name(f".{out_path.name}.{uuid.uuid4().hex}.tmp")
+    try:
+        temporary_path.write_bytes(result.content)
+        os.replace(temporary_path, out_path)
+    except Exception:
+        with contextlib.suppress(OSError):
+            temporary_path.unlink()
+        raise
 
     # Extract a thumbnail for the new archive card. Priority order:
     #   1. Source archive's ``Metadata/plate_{N}.png`` — the GUI-rendered

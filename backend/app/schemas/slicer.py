@@ -191,6 +191,34 @@ class SliceRequest(BaseModel):
             "embedded-settings path too (#2548)."
         ),
     )
+    copies: int = Field(
+        default=1,
+        ge=1,
+        le=100,
+        description=(
+            "Number of repetitions of the selected plate/layout. Forwarded to "
+            "OrcaSlicer / BambuStudio as ``--repetitions``. Values above one "
+            "also enable arrange so the duplicated layouts do not overlap."
+        ),
+    )
+    rotation_x: int = Field(
+        default=0,
+        ge=-360,
+        le=360,
+        description="Rotation around the X axis in degrees (slicer ``--rotate-x`` action).",
+    )
+    rotation_y: int = Field(
+        default=0,
+        ge=-360,
+        le=360,
+        description="Rotation around the Y axis in degrees (slicer ``--rotate-y`` action).",
+    )
+    rotation_z: int = Field(
+        default=0,
+        ge=-360,
+        le=360,
+        description="Rotation around the Z axis in degrees (slicer ``--rotate`` action).",
+    )
 
     @model_validator(mode="after")
     def normalise_preset_refs(self) -> "SliceRequest":

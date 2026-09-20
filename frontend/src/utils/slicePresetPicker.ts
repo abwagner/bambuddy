@@ -94,21 +94,48 @@ export function pickProcessDefault(
   printerName: string | null,
   compatIndex: PrinterCompatibilityIndex,
   preferredName?: string | null,
+  preferredNozzleDiameter?: string | null,
 ): PresetRef | null {
+  const targetNozzle = Number.parseFloat(preferredNozzleDiameter || '');
+  const hasTargetNozzle = Number.isFinite(targetNozzle);
+  const processNozzleDiameter = (name: string): number | null => {
+    const match = name.match(/([\d.]+)\s*(?:mm\s*)?nozzle\b/i);
+    // Bambu's standard 0.4 mm process profiles omit the nozzle suffix:
+    // `0.20mm Standard @BBL X1C` is the 0.4 mm profile, while the 0.2/0.6/
+    // 0.8 mm variants spell their diameter out. Treat only the @BBL form as
+    // implicit 0.4; an arbitrary imported profile remains unknown.
+    if (!match) return /@BBL\b/i.test(name) ? 0.4 : null;
+    const diameter = Number.parseFloat(match[1]);
+    return Number.isFinite(diameter) ? diameter : null;
+  };
+  const matchesNozzle = (preset: UnifiedPreset): boolean => {
+    const diameter = processNozzleDiameter(preset.name);
+    return diameter != null && Math.abs(diameter - targetNozzle) < 0.001;
+  };
   const preferred = findPresetByName(by, 'process', preferredName);
   if (preferred) {
     const p = findPreset(by, preferred, 'process');
-    if (p && presetCompatibility(p, 'process', printerName, compatIndex) !== 'mismatch') {
+    if (p && presetCompatibility(p, 'process', printerName, compatIndex) !== 'mismatch'
+      && (!hasTargetNozzle || matchesNozzle(p))) {
       return preferred;
     }
   }
-  for (const wanted of ['match', 'unknown'] as const) {
-    for (const tier of SLICE_MODAL_TIER_ORDER) {
-      const candidates = by[tier].process.filter(
-        (p) => presetCompatibility(p, 'process', printerName, compatIndex) === wanted,
-      );
-      const chosen = preferDefaultLayerHeight(candidates);
-      if (chosen) return { source: chosen.source, id: chosen.id };
+
+  // The nozzle is part of the process profile's machine definition. Prefer
+  // an exact nozzle match across the catalog before falling back to the
+  // older model/layer-height-only selection, which could choose e.g. an X1C
+  // 0.8 mm profile while the printer reported a live 0.4 mm nozzle.
+  const nozzleModes = hasTargetNozzle ? [true, false] : [false];
+  for (const requireNozzleMatch of nozzleModes) {
+    for (const wanted of ['match', 'unknown'] as const) {
+      for (const tier of SLICE_MODAL_TIER_ORDER) {
+        const candidates = by[tier].process.filter(
+          (p) => presetCompatibility(p, 'process', printerName, compatIndex) === wanted
+            && (!requireNozzleMatch || matchesNozzle(p)),
+        );
+        const chosen = preferDefaultLayerHeight(candidates);
+        if (chosen) return { source: chosen.source, id: chosen.id };
+      }
     }
   }
   return pickDefault(by, 'process');

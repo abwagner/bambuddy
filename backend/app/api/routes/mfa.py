@@ -1726,7 +1726,11 @@ async def oidc_callback(
 ) -> RedirectResponse:
     """Handle the OIDC authorization code callback from the identity provider."""
     external_url = await _get_base_external_url(db)
-    frontend_error_url = f"{external_url}/?oidc_error="
+    # Keep OIDC errors on the public login route.  Sending them to `/` causes
+    # ProtectedRoute to redirect to `/login` and discard the query string,
+    # which makes LoginPage retry autologin forever instead of showing the
+    # actual callback error.
+    frontend_error_url = f"{external_url}/login?oidc_error="
 
     try:
         if error:
@@ -1899,6 +1903,47 @@ async def oidc_callback(
         provider_sub: str = claims.get("sub", "")
         if not provider_sub:
             return RedirectResponse(url=f"{frontend_error_url}missing_sub_claim", status_code=302)
+
+        # Authelia (and other standards-compliant providers) normally returns
+        # identity claims such as `email` and `email_verified` from UserInfo,
+        # not from the ID token. Use the access token from the code exchange to
+        # retrieve those claims instead of requiring a provider-specific claim
+        # policy that duplicates them into the ID token.
+        access_token = token_data.get("access_token")
+        userinfo_endpoint = discovery.get("userinfo_endpoint")
+        if access_token and userinfo_endpoint:
+            if not isinstance(userinfo_endpoint, str) or not userinfo_endpoint.startswith(("https://", "http://")):
+                logger.warning("OIDC provider %d has an invalid userinfo_endpoint in discovery", provider_id)
+                return RedirectResponse(url=f"{frontend_error_url}invalid_discovery_document", status_code=302)
+            try:
+                async with httpx.AsyncClient(timeout=10) as userinfo_http:
+                    userinfo_resp = await userinfo_http.get(
+                        userinfo_endpoint,
+                        headers={"Authorization": f"Bearer {access_token}", "Accept": "application/json"},
+                    )
+                userinfo_resp.raise_for_status()
+                userinfo = userinfo_resp.json()
+                if not isinstance(userinfo, dict):
+                    raise ValueError("UserInfo response was not a JSON object")
+                userinfo_sub = userinfo.get("sub")
+                if userinfo_sub is not None and userinfo_sub != provider_sub:
+                    logger.error("OIDC UserInfo subject mismatch for provider %d", provider_id)
+                    return RedirectResponse(url=f"{frontend_error_url}token_validation_failed", status_code=302)
+                # Keep the already-validated ID-token security claims
+                # authoritative; only supplement it with UserInfo attributes.
+                claims.update(
+                    {
+                        key: value
+                        for key, value in userinfo.items()
+                        if key not in {"iss", "aud", "exp", "iat", "nonce", "sub"}
+                    }
+                )
+            except Exception as exc:
+                # Providers may omit UserInfo or return an ID token containing
+                # all required claims. Preserve that valid fallback; if the
+                # configured email is only available from UserInfo, the normal
+                # account-resolution error will explain what is missing.
+                logger.warning("OIDC UserInfo fetch failed for provider %d: %s", provider_id, type(exc).__name__)
 
         # SEC-3: resolve email via Fall A/B/C logic (see _resolve_provider_email).
         provider_email = _resolve_provider_email(provider, claims, provider_sub)

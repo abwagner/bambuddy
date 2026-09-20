@@ -209,6 +209,15 @@ describe('pickProcessDefault — layer height within equally-valid candidates (#
     expect(pickProcessDefault(presets, X1C, index, null)?.id).toBe('0.20mm Standard @BBL X1C');
   });
 
+  it('uses the implicit Bambu 0.4 mm profiles for a live 0.4 mm nozzle', () => {
+    const presets = heights([
+      '0.06mm Fine @BBL X1C 0.2 nozzle',
+      '0.20mm Standard @BBL X1C',
+      '0.24mm Standard @BBL X1C 0.6 nozzle',
+    ]);
+    expect(pickProcessDefault(presets, X1C, index, null, '0.4')?.id).toBe('0.20mm Standard @BBL X1C');
+  });
+
   it('takes the nearest height when nothing sits exactly at 0.2mm', () => {
     const presets = heights(['0.08mm Extra Fine @BBL X1C', '0.16mm Optimal @BBL X1C']);
     expect(pickProcessDefault(presets, X1C, index, null)?.id).toBe('0.16mm Optimal @BBL X1C');

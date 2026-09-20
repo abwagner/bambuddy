@@ -1778,6 +1778,12 @@ export interface SliceRequest {
   // values, so they apply on the embedded-settings path too.
   auto_orient?: boolean;
   auto_arrange?: boolean;
+  // Geometry actions exposed by OrcaSlicer/BambuStudio's headless CLI.
+  // Defaults are omitted by SliceModal for compatibility with older sidecars.
+  copies?: number;
+  rotation_x?: number;
+  rotation_y?: number;
+  rotation_z?: number;
 }
 
 // GET /api/v1/slicer/presets — unified listing across cloud / local / standard.
@@ -1844,6 +1850,10 @@ export interface SlicerPipelineCreateRequest {
   process_preset: PresetRef;
   filament_presets: PresetRef[];
   bed_type?: string | null;
+  target_kind?: 'specific_printer' | 'printer_class';
+  target_printer_id?: number | null;
+  target_model_class?: string | null;
+  fanout_strategy?: 'max_parallel' | 'fill_one_first' | 'round_robin';
 }
 export type SlicerPipelineUpdateRequest = Partial<SlicerPipelineCreateRequest> & {
   target_kind?: 'specific_printer' | 'printer_class';
@@ -2877,6 +2887,7 @@ export interface SlotPresetMapping {
   tray_id: number;
   preset_id: string;
   preset_name: string;
+  preset_source: PresetSource;
 }
 
 // Filament types
@@ -3527,6 +3538,7 @@ export interface InventorySpool {
   // Visual effect overlay: sparkle | wood | marble | glow | matte.
   effect_type: string | null;
   brand: string | null;
+  barcode?: string | null;
   label_weight: number;
   core_weight: number;
   core_weight_catalog_id: number | null;
@@ -6369,6 +6381,8 @@ export const api = {
   getSpools: (includeArchived = false) =>
     request<InventorySpool[]>(`/inventory/spools?include_archived=${includeArchived}`),
   getSpool: (id: number) => request<InventorySpool>(`/inventory/spools/${id}`),
+  getSpoolByBarcode: (barcode: string) =>
+    request<InventorySpool>(`/inventory/spools/by-barcode?barcode=${encodeURIComponent(barcode)}`),
   createSpool: (data: Omit<InventorySpool, 'id' | 'archived_at' | 'created_at' | 'updated_at' | 'k_profiles'>) =>
     request<InventorySpool>('/inventory/spools', {
       method: 'POST',

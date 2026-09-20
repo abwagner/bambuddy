@@ -1752,6 +1752,13 @@ async def run_migrations(conn):
     # half-converted column.
     await _migrate_failure_reason_vocabulary(conn)
 
+    # Migration: pipeline names are unique among active definitions. Older
+    # builds allowed the Slice dialog's "save" action to create the same name
+    # repeatedly, so collapse those legacy duplicates before adding the
+    # database-level guard. The newest row wins; the older rows are soft
+    # deleted so their run-history foreign keys remain valid.
+    await _migrate_slicer_pipeline_unique_names(conn)
+
     # Migration: Add parent_run_id column to pipeline_runs (#1425 PR C).
     # Links a retry-failed run back to its parent so the dashboard can show
     # "Retry of run #N" inline. Idempotent on both SQLite and Postgres.
@@ -3042,6 +3049,10 @@ async def run_migrations(conn):
     # current single-rgba/no-effect behaviour.
     await _safe_execute(conn, "ALTER TABLE spool ADD COLUMN extra_colors VARCHAR(255)")
     await _safe_execute(conn, "ALTER TABLE spool ADD COLUMN effect_type VARCHAR(20)")
+    # Local barcode/SKU learning. Multiple physical spools intentionally share
+    # a barcode, so this is a regular lookup index rather than a unique one.
+    await _safe_execute(conn, "ALTER TABLE spool ADD COLUMN barcode VARCHAR(128)")
+    await _safe_execute(conn, "CREATE INDEX IF NOT EXISTS ix_spool_barcode ON spool(barcode)")
     # Migration: Add cost field to spool_usage_history table
     await _safe_execute(conn, "ALTER TABLE spool_usage_history ADD COLUMN cost REAL")
     # Migration: Add archive_id field to spool_usage_history table
@@ -4956,6 +4967,62 @@ async def run_migrations(conn):
     # Migration: drop the AMS slot markers an older Bambuddy wrote into
     # Spoolman and the location sync then imported as storage locations.
     await _migrate_drop_ams_slot_locations(conn)
+
+
+async def _migrate_slicer_pipeline_unique_names(conn) -> None:
+    """Make active slicer pipeline names unique, case-insensitively.
+
+    ``create_all`` runs before handwritten migrations, so this is deliberately
+    a migration rather than an ORM index declaration. Existing duplicate
+    names are retained as history but only the newest active row remains
+    visible; the unique partial index then prevents both accidental and
+    concurrent duplicates on future writes.
+    """
+    from sqlalchemy import bindparam, text
+
+    duplicate_names = (
+        await conn.execute(
+            text(
+                "SELECT LOWER(TRIM(name)) AS name_key "
+                "FROM slicer_pipelines WHERE is_deleted = :active "
+                "GROUP BY LOWER(TRIM(name)) HAVING COUNT(*) > 1"
+            ),
+            {"active": False},
+        )
+    ).scalars().all()
+
+    async with conn.begin_nested():
+        for name_key in duplicate_names:
+            ids = (
+                await conn.execute(
+                    text(
+                        "SELECT id FROM slicer_pipelines "
+                        "WHERE is_deleted = :active AND LOWER(TRIM(name)) = :name_key "
+                        "ORDER BY id DESC"
+                    ),
+                    {"active": False, "name_key": name_key},
+                )
+            ).scalars().all()
+            # Keep the highest id (the most recently created definition).
+            old_ids = ids[1:]
+            if old_ids:
+                await conn.execute(
+                    text("UPDATE slicer_pipelines SET is_deleted = :deleted WHERE id IN :ids")
+                    .bindparams(bindparam("ids", expanding=True)),
+                    {"deleted": True, "ids": old_ids},
+                )
+                logger.warning(
+                    "[pipeline names] soft-deleted %d legacy duplicate(s) named %r",
+                    len(old_ids),
+                    name_key,
+                )
+
+    where_clause = "is_deleted = 0" if is_sqlite() else "is_deleted = FALSE"
+    await _safe_execute(
+        conn,
+        "CREATE UNIQUE INDEX IF NOT EXISTS uq_slicer_pipelines_active_name "
+        f"ON slicer_pipelines (LOWER(name)) WHERE {where_clause}",
+    )
 
 
 async def _migrate_rename_ha_sensor_alert_template(conn) -> None:

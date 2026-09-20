@@ -641,6 +641,10 @@ class SlicerApiService:
         export_3mf: bool = False,
         arrange: bool = False,
         orient: bool = False,
+        copies: int = 1,
+        rotation_x: int = 0,
+        rotation_y: int = 0,
+        rotation_z: int = 0,
         request_id: str | None = None,
         on_progress: Callable[[dict], None] | None = None,
     ) -> SliceResult:
@@ -701,6 +705,13 @@ class SlicerApiService:
         if export_3mf:
             data["exportType"] = "3mf"
         _add_layout_flags(data, arrange=arrange, orient=orient)
+        _add_geometry_actions(
+            data,
+            copies=copies,
+            rotation_x=rotation_x,
+            rotation_y=rotation_y,
+            rotation_z=rotation_z,
+        )
         if request_id is not None:
             data["requestId"] = request_id
 
@@ -722,6 +733,10 @@ class SlicerApiService:
         export_3mf: bool = False,
         arrange: bool = False,
         orient: bool = False,
+        copies: int = 1,
+        rotation_x: int = 0,
+        rotation_y: int = 0,
+        rotation_z: int = 0,
         request_id: str | None = None,
         on_progress: Callable[[dict], None] | None = None,
     ) -> SliceResult:
@@ -758,6 +773,13 @@ class SlicerApiService:
         if export_3mf:
             data["exportType"] = "3mf"
         _add_layout_flags(data, arrange=arrange, orient=orient)
+        _add_geometry_actions(
+            data,
+            copies=copies,
+            rotation_x=rotation_x,
+            rotation_y=rotation_y,
+            rotation_z=rotation_z,
+        )
         if request_id is not None:
             data["requestId"] = request_id
 
@@ -803,6 +825,31 @@ def _add_layout_flags(data: dict[str, str], *, arrange: bool, orient: bool) -> N
         data["arrange"] = "true"
     if orient:
         data["orient"] = "true"
+
+
+def _add_geometry_actions(
+    data: dict[str, str],
+    *,
+    copies: int,
+    rotation_x: int,
+    rotation_y: int,
+    rotation_z: int,
+) -> None:
+    """Add Orca/Bambu CLI geometry actions to the multipart request.
+
+    Defaults are omitted so older sidecars and callers retain their exact
+    request shape. Non-default values are plain decimal strings; the local
+    sidecar extension validates and forwards them as ``--repetitions`` and
+    ``--rotate[-x|-y]`` arguments.
+    """
+    if copies > 1:
+        data["repetitions"] = str(copies)
+    if rotation_x:
+        data["rotateX"] = str(rotation_x)
+    if rotation_y:
+        data["rotateY"] = str(rotation_y)
+    if rotation_z:
+        data["rotate"] = str(rotation_z)
 
 
 def _safe_int(value: str | None) -> int:

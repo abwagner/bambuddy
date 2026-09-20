@@ -178,3 +178,25 @@ class TestLayoutFlags:
         )
         assert req.auto_orient is True
         assert req.auto_arrange is False
+
+
+class TestGeometryActions:
+    def test_defaults_preserve_the_source_layout(self):
+        req = SliceRequest(
+            printer_preset=PresetRef(source="local", id="1"),
+            process_preset=PresetRef(source="local", id="2"),
+            filament_preset=PresetRef(source="local", id="3"),
+        )
+        assert req.copies == 1
+        assert (req.rotation_x, req.rotation_y, req.rotation_z) == (0, 0, 0)
+
+    def test_geometry_bounds_are_validated(self):
+        base = {
+            "printer_preset": PresetRef(source="local", id="1"),
+            "process_preset": PresetRef(source="local", id="2"),
+            "filament_preset": PresetRef(source="local", id="3"),
+        }
+        with pytest.raises(ValidationError):
+            SliceRequest(**base, copies=0)
+        with pytest.raises(ValidationError):
+            SliceRequest(**base, rotation_x=361)

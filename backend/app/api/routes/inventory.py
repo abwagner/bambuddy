@@ -1315,6 +1315,34 @@ async def get_spool_by_tag(
     raise HTTPException(404, "Spool not found")
 
 
+@router.get("/spools/by-barcode", response_model=SpoolResponse)
+async def get_spool_by_barcode(
+    barcode: str = Query(..., min_length=1, max_length=128),
+    db: AsyncSession = Depends(get_db),
+    _: User | None = RequirePermissionIfAuthEnabled(Permission.INVENTORY_READ),
+):
+    """Return the newest spool saved with a retail/product barcode.
+
+    A barcode identifies a SKU, not a physical spool, so duplicates are
+    expected. The frontend uses the newest row as a local product template and
+    creates a fresh inventory item with weight usage reset to zero.
+    """
+    cleaned = barcode.strip()
+    if not cleaned:
+        raise HTTPException(400, "Barcode cannot be blank")
+    result = await db.execute(
+        select(Spool)
+        .options(selectinload(Spool.k_profiles))
+        .where(Spool.barcode == cleaned)
+        .order_by(Spool.created_at.desc(), Spool.id.desc())
+        .limit(1)
+    )
+    spool = result.scalar_one_or_none()
+    if spool is None:
+        raise HTTPException(404, "Barcode is not in the local filament catalog yet")
+    return spool
+
+
 @router.get("/spools/{spool_id}", response_model=SpoolResponse)
 async def get_spool(
     spool_id: int,

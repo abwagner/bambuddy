@@ -9,6 +9,8 @@ import {
   type SliceJobProgress,
   type SliceRequest,
   type SlicerCloudStatus,
+  type SlotPresetMapping,
+  type SlotSpoolDefaults,
   type UnifiedPreset,
   type UnifiedPresetsBySlot,
   type UnifiedPresetsResponse,
@@ -32,9 +34,11 @@ import {
   pickDefault,
   pickFilamentForSlot,
   pickProcessDefault,
+  SLICE_MODAL_TIER_ORDER,
   statesDifferentMaterial,
   type Slot,
 } from '../utils/slicePresetPicker';
+import { normaliseFlow, type NozzleFlow } from '../utils/nozzleFlow';
 
 export type SliceSource =
   | { kind: 'libraryFile'; id: number; filename: string }
@@ -59,6 +63,69 @@ function fromRefValue(raw: string): PresetRef | null {
   const id = raw.slice(idx + 1);
   if (source !== 'orca_cloud' && source !== 'cloud' && source !== 'local' && source !== 'standard') return null;
   return { source, id };
+}
+
+function normaliseModelToken(value: string): string {
+  return value
+    .replace(/^Bambu Lab\s+/i, '')
+    .replace(/\s+/g, '')
+    .toLowerCase();
+}
+
+function nozzleDiameterFromPreset(name: string): string {
+  return name.match(/([\d.]+)\s*(?:mm\s*)?nozzle\b/i)?.[1] ?? '0.4';
+}
+
+function nozzleFlowFromText(value: string): NozzleFlow | null {
+  const flow = normaliseFlow(value);
+  if (flow) return flow;
+  const lower = value.toLowerCase();
+  if (/high[- ]flow/.test(lower)) return 'HH';
+  if (/standard[- ]flow/.test(lower)) return 'HS';
+  return null;
+}
+
+/**
+ * Choose the printer preset that describes the physical machine's installed
+ * nozzle. The preset catalog is intentionally broad (all Bambu models and
+ * nozzle sizes), while the live printer status is the reliable source for
+ * what this slice can actually use.
+ */
+function pickPrinterPresetForHardware(
+  data: UnifiedPresetsResponse,
+  hardwareModel: string | null | undefined,
+  nozzleType: string | null | undefined,
+  nozzleDiameter: string | null | undefined,
+  printerModels: Record<string, string>,
+): PresetRef | null {
+  if (!hardwareModel) return null;
+  const modelTokens = new Set([normaliseModelToken(hardwareModel)]);
+  for (const [longName, shortCode] of Object.entries(printerModels)) {
+    if (normaliseModelToken(longName) === normaliseModelToken(hardwareModel)
+      || normaliseModelToken(shortCode) === normaliseModelToken(hardwareModel)) {
+      modelTokens.add(normaliseModelToken(longName));
+      modelTokens.add(normaliseModelToken(shortCode));
+    }
+  }
+  const targetDiameter = Number.parseFloat(nozzleDiameter || '');
+  const targetFlow = nozzleFlowFromText(nozzleType || '');
+  const tiers: Array<'local' | 'orca_cloud' | 'cloud' | 'standard'> = ['local', 'orca_cloud', 'cloud', 'standard'];
+  let best: { ref: PresetRef; score: number } | null = null;
+  for (const [tierIndex, tier] of tiers.entries()) {
+    for (const preset of data[tier].printer) {
+      const name = normaliseModelToken(preset.name);
+      if (!Array.from(modelTokens).some((token) => name.includes(token))) continue;
+      const presetDiameter = Number.parseFloat(nozzleDiameterFromPreset(preset.name));
+      const presetFlow = nozzleFlowFromText(preset.name);
+      let score = 100 - tierIndex;
+      if (Number.isFinite(targetDiameter) && presetDiameter === targetDiameter) score += 50;
+      else if (Number.isFinite(targetDiameter)) score -= 25;
+      if (targetFlow && presetFlow === targetFlow) score += 12;
+      if (targetFlow && presetFlow && presetFlow !== targetFlow) score -= 8;
+      if (!best || score > best.score) best = { ref: { source: preset.source, id: preset.id }, score };
+    }
+  }
+  return best?.ref ?? null;
 }
 
 // Inline spinner for the filament-requirements query. The backend runs a
@@ -196,6 +263,61 @@ function formatElapsed(seconds: number): string {
 // produce rather than showing an invented placeholder.
 const SLICER_DEFAULT_COLOUR = '#00AE42';
 
+interface LoadedFilamentSlot {
+  key: string;
+  amsId: number;
+  trayId: number;
+  label: string;
+  type: string;
+  color: string;
+  remaining: number;
+}
+
+function normalizedFilamentColor(raw: string | null | undefined): string {
+  const stripped = (raw || '').trim().replace(/^#/, '');
+  return /^[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$/.test(stripped)
+    ? `#${stripped.toUpperCase()}`
+    : SLICER_DEFAULT_COLOUR;
+}
+
+function findLoadedFilamentPreset(
+  presets: UnifiedPresetsResponse,
+  mapping: SlotPresetMapping | undefined,
+  defaults: SlotSpoolDefaults | undefined,
+  slot: LoadedFilamentSlot,
+  printerName: string | null,
+  compatIndex: PrinterCompatibilityIndex,
+): PresetRef | null {
+  // A manually-saved slot mapping is the strongest signal because the user
+  // explicitly chose both the preset and its source in Configure AMS Slot.
+  if (mapping && SLICE_MODAL_TIER_ORDER.includes(mapping.preset_source)) {
+    const exact = presets[mapping.preset_source].filament.find(
+      (p) => p.id === mapping.preset_id || p.name === mapping.preset_name,
+    );
+    if (exact) return { source: exact.source, id: exact.id };
+  }
+
+  // Inventory spools carry a per-printer-model preset code/name, but legacy
+  // rows do not carry the source tier. Resolve both identities across tiers.
+  const ids = [defaults?.slicer_filament, mapping?.preset_id].filter(Boolean) as string[];
+  const names = [defaults?.slicer_filament_name, mapping?.preset_name].filter(Boolean) as string[];
+  for (const tier of SLICE_MODAL_TIER_ORDER) {
+    const match = presets[tier].filament.find(
+      (p) => ids.includes(p.id) || names.includes(p.name),
+    );
+    if (match) return { source: match.source, id: match.id };
+  }
+
+  // Unmanaged/manual AMS slots still have trustworthy live material + colour.
+  // Use the same compatibility-aware matcher as the modal's normal pre-pick.
+  return pickFilamentForSlot(
+    presets,
+    { type: slot.type, color: slot.color },
+    printerName,
+    compatIndex,
+  );
+}
+
 // `<input type="color">` accepts only `#RRGGBB`. Source colours reach us in
 // both that form and the 8-digit `#RRGGBBAA` the AMS reports, so the alpha byte
 // is trimmed for display only — an untouched slot still submits the original
@@ -213,7 +335,15 @@ export function SliceModal({ source, onClose }: SliceModalProps) {
   const queryClient = useQueryClient();
 
   const [printerPreset, setPrinterPreset] = useState<PresetRef | null>(null);
+  // A hardware-derived printer preset may be refreshed when live nozzle
+  // telemetry arrives. Once the user deliberately picks a different preset,
+  // preserve that choice until they change the physical printer again.
+  const manualPrinterPreset = useRef(false);
   const [processPreset, setProcessPreset] = useState<PresetRef | null>(null);
+  // An automatically selected process profile may need to be replaced when
+  // nozzle telemetry arrives after the preset catalog. Deliberate user picks
+  // remain stable even when another compatible nozzle profile exists.
+  const manualProcessPreset = useRef(false);
   // One filament ref per plate slot, in plate order. For STL / single-plate /
   // single-color sources this is a one-element array; multi-color 3MFs get one
   // entry per AMS slot the plate uses. Pre-pick (effect below) initialises
@@ -269,6 +399,11 @@ export function SliceModal({ source, onClose }: SliceModalProps) {
   // them — these act on the geometry, whichever config drives the slice.
   const [autoOrient, setAutoOrient] = useState(false);
   const [autoArrange, setAutoArrange] = useState(false);
+  const [copies, setCopies] = useState(1);
+  const [rotationX, setRotationX] = useState(0);
+  const [rotationY, setRotationY] = useState(0);
+  const [rotationZ, setRotationZ] = useState(0);
+  const [inventoryPrinterId, setInventoryPrinterId] = useState<number | null>(null);
 
   // #2622: process settings the designer changed away from the stock preset,
   // carried onto the picked process profile so a cross-printer re-slice keeps
@@ -301,6 +436,9 @@ export function SliceModal({ source, onClose }: SliceModalProps) {
   });
   const [savePipelineOpen, setSavePipelineOpen] = useState(false);
   const [pipelineDraftName, setPipelineDraftName] = useState('');
+  const [pipelineSaveMode, setPipelineSaveMode] = useState<'create' | 'update'>('create');
+  const [activePipelineId, setActivePipelineId] = useState<number | null>(null);
+  const [pipelineTargetPrinterId, setPipelineTargetPrinterId] = useState<number | null>(null);
   const { showToast } = useToast();
   const createPipelineMutation = useMutation({
     mutationFn: (body: {
@@ -309,6 +447,9 @@ export function SliceModal({ source, onClose }: SliceModalProps) {
       process_preset: PresetRef;
       filament_presets: PresetRef[];
       bed_type: string | null;
+      target_kind: 'specific_printer' | 'printer_class';
+      target_printer_id: number | null;
+      target_model_class: string | null;
     }) => api.createSlicerPipeline(body),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['slicer-pipelines'] });
@@ -318,6 +459,42 @@ export function SliceModal({ source, onClose }: SliceModalProps) {
     },
     onError: (err: Error) => {
       showToast(err.message || t('slice.pipelines.toast.saveFailed', 'Save failed'), 'error');
+    },
+  });
+  const updatePipelineMutation = useMutation({
+    mutationFn: ({ id, body }: {
+      id: number;
+      body: {
+        name: string;
+        printer_preset: PresetRef;
+        process_preset: PresetRef;
+        filament_presets: PresetRef[];
+        bed_type: string | null;
+        target_kind: 'specific_printer' | 'printer_class';
+        target_printer_id: number;
+        target_model_class: string | null;
+      };
+    }) => api.updateSlicerPipeline(id, body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['slicer-pipelines'] });
+      showToast(t('slice.pipelines.toast.updated', 'Pipeline updated'), 'success');
+      setSavePipelineOpen(false);
+      setPipelineDraftName('');
+    },
+    onError: (err: Error) => {
+      showToast(err.message || t('slice.pipelines.toast.saveFailed', 'Save failed'), 'error');
+    },
+  });
+  const deletePipelineMutation = useMutation({
+    mutationFn: (id: number) => api.deleteSlicerPipeline(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['slicer-pipelines'] });
+      setActivePipelineId(null);
+      setSavePipelineOpen(false);
+      showToast(t('slice.pipelines.toast.deleted', 'Pipeline deleted'), 'success');
+    },
+    onError: (err: Error) => {
+      showToast(err.message || t('slice.pipelines.toast.deleteFailed', 'Delete failed'), 'error');
     },
   });
 
@@ -408,6 +585,84 @@ export function SliceModal({ source, onClose }: SliceModalProps) {
     enabled: !platesQuery.isLoading && !needsPlatePicker,
   });
 
+  // Physical-printer context for the live filament picker. This is separate
+  // from the slicer printer *preset*: one describes hardware/AMS state, the
+  // other is the JSON profile sent to Orca. Keeping the ids separate avoids
+  // pretending their naming schemes are interchangeable.
+  const printersQuery = useQuery({
+    queryKey: ['printers'],
+    queryFn: api.getPrinters,
+    staleTime: 30_000,
+    enabled: !needsPlatePicker,
+  });
+  useEffect(() => {
+    if (inventoryPrinterId != null || !printersQuery.data?.length) return;
+    const first = printersQuery.data.find((printer) => printer.is_active) ?? printersQuery.data[0];
+    setInventoryPrinterId(first.id);
+  }, [inventoryPrinterId, printersQuery.data]);
+
+  const printerStatusQuery = useQuery({
+    queryKey: ['printer-status', inventoryPrinterId],
+    queryFn: () => api.getPrinterStatus(inventoryPrinterId as number),
+    enabled: inventoryPrinterId != null,
+    refetchInterval: 15_000,
+  });
+  const slotPresetsQuery = useQuery({
+    queryKey: ['slot-presets', inventoryPrinterId],
+    queryFn: () => api.getSlotPresets(inventoryPrinterId as number),
+    enabled: inventoryPrinterId != null,
+    staleTime: 30_000,
+  });
+
+  const loadedFilamentSlots = useMemo<LoadedFilamentSlot[]>(() => {
+    const status = printerStatusQuery.data;
+    if (!status) return [];
+    const loaded: LoadedFilamentSlot[] = [];
+    for (const unit of status.ams) {
+      for (const tray of unit.tray) {
+        if (!tray.tray_type || tray.exists === false || tray.state === 9) continue;
+        loaded.push({
+          key: `${unit.id}:${tray.id}`,
+          amsId: unit.id,
+          trayId: tray.id,
+          label: `${unit.is_ams_ht ? 'AMS HT' : `AMS ${unit.id + 1}`} · ${unit.is_ams_ht ? 'slot 1' : `slot ${tray.id + 1}`}`,
+          type: tray.tray_sub_brands || tray.tray_type,
+          color: normalizedFilamentColor(tray.tray_color),
+          remaining: tray.remain,
+        });
+      }
+    }
+    for (const tray of status.vt_tray ?? []) {
+      if (!tray.tray_type || tray.exists === false || tray.state === 9) continue;
+      const trayId = Math.max(0, tray.id - 254);
+      loaded.push({
+        key: `255:${trayId}`,
+        amsId: 255,
+        trayId,
+        label: status.vt_tray.length > 1 ? `External spool ${trayId + 1}` : 'External spool',
+        type: tray.tray_sub_brands || tray.tray_type,
+        color: normalizedFilamentColor(tray.tray_color),
+        remaining: tray.remain,
+      });
+    }
+    return loaded;
+  }, [printerStatusQuery.data]);
+
+  const slotDefaultsQuery = useQuery({
+    queryKey: ['slice-slot-defaults', inventoryPrinterId, loadedFilamentSlots.map((slot) => slot.key).join(',')],
+    queryFn: async () => {
+      const rows = await Promise.all(
+        loadedFilamentSlots.map(async (slot) => [
+          slot.key,
+          await api.getSlotSpoolDefaults(inventoryPrinterId as number, slot.amsId, slot.trayId),
+        ] as const),
+      );
+      return Object.fromEntries(rows) as Record<string, SlotSpoolDefaults>;
+    },
+    enabled: inventoryPrinterId != null && loadedFilamentSlots.length > 0,
+    staleTime: 30_000,
+  });
+
   // Manual refresh — bypasses the backend's 5-minute cloud cache and 1-hour
   // bundled cache for one call so users who deleted a preset in Bambu
   // Studio / Bambu Handy see the change immediately (#1581). The cache write
@@ -438,6 +693,51 @@ export function SliceModal({ source, onClose }: SliceModalProps) {
     queryFn: api.getSlicerPrinterModels,
     staleTime: Infinity,
   });
+
+  const inventoryPrinter = useMemo(
+    () => printersQuery.data?.find((printer) => printer.id === inventoryPrinterId) ?? null,
+    [inventoryPrinterId, printersQuery.data],
+  );
+  // On dual-nozzle machines the active extruder is the least surprising
+  // single preset to use. On ordinary Bambu printers this is simply nozzle 0.
+  const installedNozzle = useMemo(() => {
+    const status = printerStatusQuery.data;
+    if (!status?.nozzles?.length) return null;
+    return status.nozzles[status.active_extruder] ?? status.nozzles[0];
+  }, [printerStatusQuery.data]);
+
+  const hardwarePrinterPreset = useMemo(
+    () => presetsQuery.data && inventoryPrinter
+      ? pickPrinterPresetForHardware(
+          presetsQuery.data,
+          inventoryPrinter.model,
+          installedNozzle?.nozzle_type,
+          installedNozzle?.nozzle_diameter,
+          printerModelsQuery.data ?? {},
+        )
+      : null,
+    [installedNozzle, inventoryPrinter, presetsQuery.data, printerModelsQuery.data],
+  );
+
+  // Do not let the catalog's first printer/process become state before the
+  // physical-printer context has arrived. The catalog is global and its
+  // alphabetical first entry can be an A1 0.2 mm profile even when the live
+  // machine is an X1C with a 0.4 mm nozzle. A failed status request is still a
+  // resolved context: the model is enough to select the printer family, and
+  // the slicer's 0.4 mm Bambu profiles are the safe default for that family.
+  const hardwareContextReady = useMemo(() => {
+    const physicalPrinterResolved = !printersQuery.isLoading
+      && (inventoryPrinter != null || (printersQuery.data?.length ?? 0) === 0);
+    const modelRegistryResolved = !printerModelsQuery.isLoading;
+    const nozzleResolved = inventoryPrinter == null || !printerStatusQuery.isLoading;
+    return physicalPrinterResolved && modelRegistryResolved && nozzleResolved;
+  }, [inventoryPrinter, printerModelsQuery.isLoading, printerStatusQuery.isLoading, printersQuery.data?.length, printersQuery.isLoading]);
+
+  useEffect(() => {
+    if (!hardwareContextReady) return;
+    if (!hardwarePrinterPreset || manualPrinterPreset.current) return;
+    setPrinterPreset(hardwarePrinterPreset);
+  }, [hardwareContextReady, hardwarePrinterPreset]);
 
   // Selected-printer context for the process / filament filter (#1325).
   const selectedPrinterName = useMemo<string | null>(() => {
@@ -547,13 +847,13 @@ export function SliceModal({ source, onClose }: SliceModalProps) {
   useEffect(() => {
     const data = presetsQuery.data;
     if (!data) return;
-    if (printerPreset == null) {
+    if (printerPreset == null && !hardwarePrinterPreset) {
       setPrinterPreset(
         findPresetByName(data, 'printer', embeddedPrinter) ?? pickDefault(data, 'printer'),
       );
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [presetsQuery.data, embeddedPrinter]);
+  }, [presetsQuery.data, embeddedPrinter, hardwarePrinterPreset]);
 
   // Process pre-pick / re-pick (#1325): defaults to a process compatible with
   // the selected printer, and re-defaults when a printer change leaves the
@@ -561,16 +861,33 @@ export function SliceModal({ source, onClose }: SliceModalProps) {
   useEffect(() => {
     const data = presetsQuery.data;
     if (!data) return;
+    // Do not commit the catalog's first process (often 0.06mm) while the
+    // hardware-derived printer preset is still being resolved. Once the
+    // printer name is available, compatibility and live nozzle diameter can
+    // select the correct profile deterministically.
+    if (!hardwareContextReady && inventoryPrinter && !manualProcessPreset.current) {
+      setProcessPreset(null);
+      return;
+    }
+    if (!selectedPrinterName && hardwarePrinterPreset && !manualProcessPreset.current) {
+      setProcessPreset(null);
+      return;
+    }
     setProcessPreset((current) => {
-      if (current) {
-        const p = findPreset(data, current, 'process');
-        if (p && presetCompatibility(p, 'process', selectedPrinterName, compatIndex) !== 'mismatch') {
-          return current;
-        }
-      }
-      return pickProcessDefault(data, selectedPrinterName, compatIndex, embeddedProcess);
+      // Auto-selected profiles are deliberately recomputed here. The first
+      // pass can happen before printer/nozzle queries resolve, and preserving
+      // that first value is what left a stale 0.06mm profile selected. Only
+      // an explicit dropdown or pipeline choice opts out of auto-picking.
+      if (current && manualProcessPreset.current) return current;
+      return pickProcessDefault(
+        data,
+        selectedPrinterName,
+        compatIndex,
+        embeddedProcess,
+        installedNozzle?.nozzle_diameter,
+      );
     });
-  }, [presetsQuery.data, selectedPrinterName, compatIndex, embeddedProcess]);
+  }, [presetsQuery.data, selectedPrinterName, compatIndex, embeddedProcess, installedNozzle?.nozzle_diameter, hardwareContextReady, hardwarePrinterPreset, inventoryPrinter]);
 
   // Filament pre-pick: re-runs when the active filament-slot count changes
   // (plate selection, single-plate metadata arriving) or the selected printer
@@ -697,6 +1014,10 @@ export function SliceModal({ source, onClose }: SliceModalProps) {
       // them keeps the request identical to what older clients send.
       ...(autoOrient ? { auto_orient: true } : {}),
       ...(autoArrange ? { auto_arrange: true } : {}),
+      ...(copies > 1 ? { copies } : {}),
+      ...(rotationX !== 0 ? { rotation_x: rotationX } : {}),
+      ...(rotationY !== 0 ? { rotation_y: rotationY } : {}),
+      ...(rotationZ !== 0 ? { rotation_z: rotationZ } : {}),
     };
   }
 
@@ -816,6 +1137,34 @@ export function SliceModal({ source, onClose }: SliceModalProps) {
                   lg both collapse back into the original single stack. */}
               <div className="lg:grid lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] lg:gap-5 lg:items-start">
                 <div className="space-y-4 min-w-0">
+              {printersQuery.data && printersQuery.data.length > 0 && (
+                <label className="block">
+                  <span className="block text-xs text-bambu-gray mb-1">
+                    {t('slice.loadedFilamentPrinter', 'Loaded filament from')}
+                  </span>
+                  <select
+                    value={inventoryPrinterId ?? ''}
+                      onChange={(event) => {
+                        manualPrinterPreset.current = false;
+                        manualProcessPreset.current = false;
+                        setInventoryPrinterId(Number(event.target.value));
+                      }}
+                    disabled={isEnqueuing}
+                    data-slice-auxiliary="true"
+                    aria-label={t('slice.loadedFilamentPrinter', 'Loaded filament from')}
+                    className="w-full px-2 py-1.5 bg-bambu-dark border border-bambu-dark-tertiary rounded text-white text-sm disabled:opacity-50"
+                  >
+                    {printersQuery.data.filter((printer) => printer.is_active).map((printer) => (
+                      <option key={printer.id} value={printer.id}>
+                        {printer.name}{printer.model ? ` · ${printer.model}` : ''}
+                      </option>
+                    ))}
+                  </select>
+                  <span className="block text-xs text-bambu-gray/70 mt-1">
+                    {t('slice.loadedFilamentPrinterHint', 'AMS and external-spool choices below come from this printer’s live state.')}
+                  </span>
+                </label>
+              )}
               {/* Slicer Pipelines (#1425): apply a saved preset bundle to all
                   four slots, or save the current selection as a pipeline.
                   Pipelines are managed in Settings → Workflow → Pipelines. */}
@@ -824,17 +1173,19 @@ export function SliceModal({ source, onClose }: SliceModalProps) {
                   <Cog className="w-3.5 h-3.5" /> {t('slice.pipelines.label', 'Pipeline')}
                 </span>
                 <select
-                  value=""
+                  value={activePipelineId ?? ''}
                   disabled={isEnqueuing || (pipelinesQuery.data?.pipelines.length ?? 0) === 0}
                   onChange={(e) => {
                     const id = parseInt(e.target.value, 10);
                     if (Number.isNaN(id)) return;
                     const picked = pipelinesQuery.data?.pipelines.find((p) => p.id === id);
                     if (!picked) return;
+                    setActivePipelineId(picked.id);
                     // Apply slot state. The filament list is right-padded from
                     // current state so a pipeline with fewer entries than the
                     // current source's slot count keeps the existing tail.
                     setPrinterPreset(picked.printer_preset);
+                    manualProcessPreset.current = true;
                     setProcessPreset(picked.process_preset);
                     setBedType(picked.bed_type);
                     setFilamentPresets((current) => {
@@ -851,10 +1202,6 @@ export function SliceModal({ source, onClose }: SliceModalProps) {
                       return next;
                     });
                     showToast(t('slice.pipelines.toast.applied', 'Applied "{{name}}"', { name: picked.name }), 'success');
-                    // Reset the dropdown so the user can re-apply the same
-                    // pipeline if needed (selects don't fire onChange when
-                    // value reselects the same option).
-                    e.target.value = '';
                   }}
                   className="text-xs px-2 py-1 bg-bambu-dark border border-bambu-dark-tertiary rounded text-white disabled:opacity-50 disabled:cursor-not-allowed flex-1 min-w-[10ch]"
                   aria-label={t('slice.pipelines.applyAria', 'Apply pipeline')}
@@ -871,24 +1218,69 @@ export function SliceModal({ source, onClose }: SliceModalProps) {
                   ))}
                 </select>
                 {!savePipelineOpen ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPipelineDraftName('');
-                      setSavePipelineOpen(true);
-                    }}
-                    disabled={
-                      isEnqueuing ||
-                      !printerPreset ||
-                      !processPreset ||
-                      filamentPresets.length === 0 ||
-                      filamentPresets.some((f) => f === null)
-                    }
-                    className="text-xs px-2 py-1 bg-bambu-green/20 hover:bg-bambu-green/30 text-bambu-green border border-bambu-green/40 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-                    title={t('slice.pipelines.saveTitle', 'Save the current four-slot selection as a reusable pipeline')}
-                  >
-                    {t('slice.pipelines.saveButton', 'Save as pipeline')}
-                  </button>
+                  <>
+                    {activePipelineId != null && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const active = pipelinesQuery.data?.pipelines.find((p) => p.id === activePipelineId);
+                          setPipelineSaveMode('update');
+                          setPipelineDraftName(active?.name ?? '');
+                          setPipelineTargetPrinterId(active?.target_printer_id ?? inventoryPrinterId);
+                          setSavePipelineOpen(true);
+                        }}
+                        disabled={
+                          isEnqueuing ||
+                          !printerPreset ||
+                          !processPreset ||
+                          filamentPresets.length === 0 ||
+                          filamentPresets.some((f) => f === null)
+                        }
+                        className="text-xs px-2 py-1 bg-bambu-green/20 hover:bg-bambu-green/30 text-bambu-green border border-bambu-green/40 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                        title={t('slice.pipelines.updateTitle', 'Update the applied pipeline with the current settings')}
+                      >
+                        {t('slice.pipelines.updateButton', 'Update pipeline')}
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPipelineSaveMode('create');
+                        setPipelineDraftName('');
+                        setPipelineTargetPrinterId(inventoryPrinterId);
+                        setSavePipelineOpen(true);
+                      }}
+                      disabled={
+                        isEnqueuing ||
+                        !printerPreset ||
+                        !processPreset ||
+                        filamentPresets.length === 0 ||
+                        filamentPresets.some((f) => f === null)
+                      }
+                      className="text-xs px-2 py-1 bg-bambu-green/20 hover:bg-bambu-green/30 text-bambu-green border border-bambu-green/40 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                      title={t('slice.pipelines.saveTitle', 'Save the current four-slot selection as a reusable pipeline')}
+                    >
+                      {activePipelineId != null
+                        ? t('slice.pipelines.saveNewButton', 'Save as new')
+                        : t('slice.pipelines.saveButton', 'Save as pipeline')}
+                    </button>
+                    {activePipelineId != null && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const active = pipelinesQuery.data?.pipelines.find((p) => p.id === activePipelineId);
+                          if (active && confirm(t('slice.pipelines.confirmDelete', 'Delete this pipeline? This cannot be undone.'))) {
+                            deletePipelineMutation.mutate(active.id);
+                          }
+                        }}
+                        disabled={isEnqueuing || deletePipelineMutation.isPending}
+                        className="text-xs px-2 py-1 text-red-400 hover:bg-red-500/10 border border-red-400/30 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                        title={t('slice.pipelines.deleteTitle', 'Delete the applied pipeline')}
+                      >
+                        {t('slice.pipelines.deleteButton', 'Delete')}
+                      </button>
+                    )}
+                  </>
                 ) : (
                   <div className="flex items-center gap-1 flex-1 min-w-[16ch]">
                     <input
@@ -899,6 +1291,20 @@ export function SliceModal({ source, onClose }: SliceModalProps) {
                       aria-label={t('slice.pipelines.nameAria', 'New pipeline name')}
                       className="flex-1 text-xs px-2 py-1 bg-bambu-dark border border-bambu-dark-tertiary rounded text-white"
                     />
+                    <select
+                      value={pipelineTargetPrinterId ?? ''}
+                      onChange={(e) => setPipelineTargetPrinterId(e.target.value ? Number(e.target.value) : null)}
+                      aria-label={t('slice.pipelines.targetPrinterAria', 'Automatic print target')}
+                      title={t('slice.pipelines.targetPrinterTitle', 'Set a printer so Run with pipeline can slice and print automatically')}
+                      className="max-w-[12rem] text-xs px-2 py-1 bg-bambu-dark border border-bambu-dark-tertiary rounded text-white"
+                    >
+                      <option value="">{t('slice.pipelines.sliceOnly', 'Slice only')}</option>
+                      {(printersQuery.data ?? []).filter((p) => p.is_active).map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {t('slice.pipelines.printOn', 'Print on {{name}}', { name: p.name })}
+                        </option>
+                      ))}
+                    </select>
                     <button
                       type="button"
                       onClick={() => {
@@ -906,21 +1312,45 @@ export function SliceModal({ source, onClose }: SliceModalProps) {
                         if (!trimmed || !printerPreset || !processPreset) return;
                         const nonNull = filamentPresets.filter((f): f is PresetRef => f !== null);
                         if (nonNull.length === 0) return;
-                        createPipelineMutation.mutate({
+                        const existing = pipelinesQuery.data?.pipelines.find((p) =>
+                          p.name.trim().toLowerCase() === trimmed.toLowerCase()
+                          && p.id !== activePipelineId,
+                        );
+                        if (existing) {
+                          showToast(t('slice.pipelines.duplicateName', 'A pipeline with this name already exists.'), 'error');
+                          return;
+                        }
+                        const targetKind = pipelineTargetPrinterId != null ? 'specific_printer' : 'printer_class';
+                        const targetPrinterId = pipelineTargetPrinterId ?? 0;
+                        const body = {
                           name: trimmed,
                           printer_preset: printerPreset,
                           process_preset: processPreset,
                           filament_presets: nonNull,
                           bed_type: bedType,
-                        });
+                          target_kind: targetKind as 'specific_printer' | 'printer_class',
+                          target_printer_id: targetPrinterId,
+                          target_model_class: null,
+                        };
+                        if (pipelineSaveMode === 'update' && activePipelineId != null) {
+                          updatePipelineMutation.mutate({ id: activePipelineId, body });
+                        } else {
+                          createPipelineMutation.mutate({ ...body, target_printer_id: pipelineTargetPrinterId });
+                        }
                       }}
-                      disabled={createPipelineMutation.isPending || !pipelineDraftName.trim()}
+                      disabled={
+                        createPipelineMutation.isPending ||
+                        updatePipelineMutation.isPending ||
+                        !pipelineDraftName.trim()
+                      }
                       className="text-xs px-2 py-1 bg-bambu-green hover:bg-bambu-green/80 text-white rounded disabled:opacity-50"
                     >
-                      {createPipelineMutation.isPending ? (
+                      {createPipelineMutation.isPending || updatePipelineMutation.isPending ? (
                         <Loader2 className="w-3 h-3 animate-spin" />
                       ) : (
-                        t('common.save', 'Save')
+                        pipelineSaveMode === 'update'
+                          ? t('slice.pipelines.updateButton', 'Update pipeline')
+                          : t('common.save', 'Save')
                       )}
                     </button>
                     <button
@@ -941,7 +1371,10 @@ export function SliceModal({ source, onClose }: SliceModalProps) {
                 slot="printer"
                 data={presetsQuery.data}
                 value={printerPreset}
-                onChange={setPrinterPreset}
+                onChange={(ref) => {
+                  manualPrinterPreset.current = true;
+                  setPrinterPreset(ref);
+                }}
                 // Locked in embedded mode too: the picked printer is unused on
                 // the embedded-settings path, and changing it away from the
                 // design's target would drop canUseEmbedded and yank the toggle
@@ -973,11 +1406,20 @@ export function SliceModal({ source, onClose }: SliceModalProps) {
                 slot="process"
                 data={presetsQuery.data}
                 value={processPreset}
-                onChange={setProcessPreset}
+                onChange={(ref) => {
+                  manualProcessPreset.current = true;
+                  setProcessPreset(ref);
+                }}
                 disabled={isEnqueuing || useEmbedded}
                 selectedPrinterName={selectedPrinterName}
                 compatIndex={compatIndex}
               />
+              {inventoryPrinter && installedNozzle?.nozzle_diameter && hardwarePrinterPreset && (
+                <p className="text-xs text-bambu-green/90 -mt-1">
+                  Using the live nozzle from {inventoryPrinter.name}: {installedNozzle.nozzle_diameter} mm
+                  {installedNozzle.nozzle_type ? ` (${installedNozzle.nozzle_type})` : ''}.
+                </p>
+              )}
 
               {/* Bed-type override (#1337). Always visible, always enabled.
                   The backend patches curr_bed_type on the resolved process
@@ -996,6 +1438,58 @@ export function SliceModal({ source, onClose }: SliceModalProps) {
                   actions on the geometry, so they work regardless of where
                   the print config comes from. */}
               <div className="flex flex-col gap-2">
+                <div className="grid grid-cols-[5rem_1fr] gap-2 items-end">
+                  <label className="block">
+                    <span className="block text-xs text-bambu-gray mb-1">
+                      {t('slice.copies', 'Copies')}
+                    </span>
+                    <input
+                      type="number"
+                      min={1}
+                      max={100}
+                      value={copies}
+                      onChange={(event) => {
+                        const next = Math.min(100, Math.max(1, Number.parseInt(event.target.value, 10) || 1));
+                        setCopies(next);
+                      }}
+                      disabled={isEnqueuing}
+                      className="w-full px-2 py-1.5 bg-bambu-dark border border-bambu-dark-tertiary rounded text-white text-sm disabled:opacity-50"
+                    />
+                  </label>
+                  <span className="text-xs text-bambu-gray/70 pb-1.5">
+                    {copies > 1
+                      ? t('slice.copiesArrangeHint', 'Copies are arranged automatically to prevent overlap.')
+                      : t('slice.copiesHint', 'Duplicates the selected plate/layout.')}
+                  </span>
+                </div>
+                <div>
+                  <span className="block text-xs text-bambu-gray mb-1">
+                    {t('slice.orientation', 'Orientation')}
+                  </span>
+                  <div className="grid grid-cols-3 gap-2">
+                    {([
+                      ['X', rotationX, setRotationX],
+                      ['Y', rotationY, setRotationY],
+                      ['Z', rotationZ, setRotationZ],
+                    ] as const).map(([axis, value, setter]) => (
+                      <label key={axis} className="block">
+                        <span className="sr-only">{t('slice.rotationAxis', 'Rotate {{axis}}', { axis })}</span>
+                        <select
+                          value={value}
+                          onChange={(event) => setter(Number(event.target.value))}
+                          disabled={isEnqueuing || autoOrient}
+                          data-slice-auxiliary="true"
+                          aria-label={t('slice.rotationAxis', 'Rotate {{axis}}', { axis })}
+                          className="w-full px-2 py-1.5 bg-bambu-dark border border-bambu-dark-tertiary rounded text-white text-sm disabled:opacity-50"
+                        >
+                          {[0, 90, 180, 270].map((degrees) => (
+                            <option key={degrees} value={degrees}>{axis} {degrees}°</option>
+                          ))}
+                        </select>
+                      </label>
+                    ))}
+                  </div>
+                </div>
                 <label className="flex items-start gap-2 text-sm text-bambu-gray cursor-pointer select-none">
                   <input
                     type="checkbox"
@@ -1057,8 +1551,59 @@ export function SliceModal({ source, onClose }: SliceModalProps) {
                     ? baseLabel
                     : `${baseLabel} ${t('slice.notUsedByPlate')}`;
                   return (
+                    <div key={`filament-${idx}`} className="space-y-2">
+                    {isUsed && loadedFilamentSlots.length > 0 && !useEmbedded && (
+                      <label className="block">
+                        <span className="block text-xs text-bambu-gray mb-1">
+                          {t('slice.useLoadedFilament', 'Use loaded filament')}
+                        </span>
+                        <select
+                          value=""
+                          onChange={(event) => {
+                            const loaded = loadedFilamentSlots.find((candidate) => candidate.key === event.target.value);
+                            if (!loaded || !presetsQuery.data) return;
+                            const mapping = slotPresetsQuery.data?.[
+                              loaded.amsId >= 128 && loaded.amsId <= 135
+                                ? loaded.amsId
+                                : loaded.amsId * 4 + loaded.trayId
+                            ];
+                            const ref = findLoadedFilamentPreset(
+                              presetsQuery.data,
+                              mapping,
+                              slotDefaultsQuery.data?.[loaded.key],
+                              loaded,
+                              selectedPrinterName,
+                              compatIndex,
+                            );
+                            if (!ref) return;
+                            explicitFilamentSlots.current.add(idx);
+                            setFilamentPresets((current) => {
+                              const next = filamentSlots.map((_, i) => current[i] ?? null);
+                              next[idx] = ref;
+                              return next;
+                            });
+                            setFilamentColours((current) => {
+                              const next = filamentSlots.map((_, i) => current[i] ?? null);
+                              next[idx] = loaded.color;
+                              return next;
+                            });
+                            event.target.value = '';
+                          }}
+                          disabled={isEnqueuing || slotDefaultsQuery.isLoading}
+                          data-slice-auxiliary="true"
+                          aria-label={t('slice.useLoadedFilamentForSlot', 'Use loaded filament for slot {{slot}}', { slot: idx + 1 })}
+                          className="w-full px-2 py-1.5 bg-bambu-dark border border-bambu-dark-tertiary rounded text-white text-sm disabled:opacity-50"
+                        >
+                          <option value="">{t('slice.chooseLoadedFilament', 'Choose an AMS/external spool…')}</option>
+                          {loadedFilamentSlots.map((loaded) => (
+                            <option key={loaded.key} value={loaded.key}>
+                              {loaded.label} · {loaded.type} · {loaded.remaining >= 0 ? `${loaded.remaining}%` : t('common.unknown', 'unknown')}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    )}
                     <PresetDropdown
-                      key={`filament-${idx}`}
                       label={label}
                       slot="filament"
                       data={presetsQuery.data}
@@ -1091,6 +1636,7 @@ export function SliceModal({ source, onClose }: SliceModalProps) {
                       selectedPrinterName={selectedPrinterName}
                       compatIndex={compatIndex}
                     />
+                    </div>
                   );
                 })
               )}

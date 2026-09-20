@@ -32,9 +32,15 @@ vi.mock('../../api/client', () => ({
     updateSettings: vi.fn().mockResolvedValue({}),
     // Slicer Pipelines (#1425)
     listSlicerPipelines: vi.fn(),
+    updateSlicerPipeline: vi.fn(),
+    deleteSlicerPipeline: vi.fn(),
     createSlicerPipeline: vi.fn(),
     getSlicerPrinterModels: vi.fn(),
     getSlicerPresetValues: vi.fn(),
+    getPrinters: vi.fn(),
+    getPrinterStatus: vi.fn(),
+    getSlotPresets: vi.fn(),
+    getSlotSpoolDefaults: vi.fn(),
   },
 }));
 
@@ -48,9 +54,15 @@ const mockApi = api as unknown as {
   getLibraryFileFilamentRequirements: ReturnType<typeof vi.fn>;
   getArchiveFilamentRequirements: ReturnType<typeof vi.fn>;
   listSlicerPipelines: ReturnType<typeof vi.fn>;
+  updateSlicerPipeline: ReturnType<typeof vi.fn>;
+  deleteSlicerPipeline: ReturnType<typeof vi.fn>;
   createSlicerPipeline: ReturnType<typeof vi.fn>;
   getSlicerPrinterModels: ReturnType<typeof vi.fn>;
   getSlicerPresetValues: ReturnType<typeof vi.fn>;
+  getPrinters: ReturnType<typeof vi.fn>;
+  getPrinterStatus: ReturnType<typeof vi.fn>;
+  getSlotPresets: ReturnType<typeof vi.fn>;
+  getSlotSpoolDefaults: ReturnType<typeof vi.fn>;
 };
 
 function makeUnified(overrides: Partial<UnifiedPresetsResponse> = {}): UnifiedPresetsResponse {
@@ -97,7 +109,7 @@ function renderWithTracker(props: Parameters<typeof SliceModal>[0]) {
 // pipeline combobox so those indices stay stable.
 function presetSelects(): HTMLSelectElement[] {
   return (screen.getAllByRole('combobox') as HTMLSelectElement[]).filter(
-    (el) => el.getAttribute('aria-label') !== 'Apply pipeline',
+    (el) => el.getAttribute('aria-label') !== 'Apply pipeline' && el.dataset.sliceAuxiliary !== 'true',
   );
 }
 
@@ -145,6 +157,20 @@ describe('SliceModal', () => {
     });
     // Default: no saved pipelines. Tests opt in by overriding this.
     mockApi.listSlicerPipelines.mockResolvedValue({ pipelines: [] });
+    mockApi.updateSlicerPipeline.mockResolvedValue({});
+    mockApi.deleteSlicerPipeline.mockResolvedValue(undefined);
+    mockApi.getPrinters.mockResolvedValue([]);
+    mockApi.getPrinterStatus.mockResolvedValue(null);
+    mockApi.getSlotPresets.mockResolvedValue({});
+    mockApi.getSlotSpoolDefaults.mockResolvedValue({
+      slicer_filament: null,
+      slicer_filament_name: null,
+      cali_idx: null,
+      k_value: null,
+      profile_name: null,
+      extruder: null,
+      nozzle_diameter: '0.4',
+    });
   });
 
   it('auto-selects the highest-priority tier per slot on first load', async () => {
@@ -785,6 +811,81 @@ describe('SliceModal', () => {
       const [, body] = vi.mocked(mockApi.sliceLibraryFile).mock.calls[0];
       expect(body).not.toHaveProperty('auto_orient');
       expect(body).not.toHaveProperty('auto_arrange');
+    });
+  });
+
+  it('sends copy count and explicit XYZ orientation', async () => {
+    mockApi.sliceLibraryFile.mockResolvedValue({
+      job_id: 42,
+      status: 'pending',
+      status_url: '/api/v1/slice-jobs/42',
+    });
+    renderWithTracker({
+      source: { kind: 'libraryFile', id: 100, filename: 'Cube.stl' },
+      onClose: vi.fn(),
+    });
+    await waitFor(() => expect(screen.getByText('My Custom X1C')).toBeDefined());
+
+    fireEvent.change(screen.getByRole('spinbutton'), { target: { value: '4' } });
+    await userEvent.setup().selectOptions(screen.getByRole('combobox', { name: 'Rotate X' }), '90');
+    await userEvent.setup().selectOptions(screen.getByRole('combobox', { name: 'Rotate Y' }), '180');
+    await userEvent.setup().selectOptions(screen.getByRole('combobox', { name: 'Rotate Z' }), '270');
+    await userEvent.setup().click(screen.getByRole('button', { name: /^Slice$/ }));
+
+    await waitFor(() => {
+      const [, body] = vi.mocked(mockApi.sliceLibraryFile).mock.calls[0];
+      expect(body).toMatchObject({ copies: 4, rotation_x: 90, rotation_y: 180, rotation_z: 270 });
+    });
+  });
+
+  it('uses live AMS filament and its saved slicer preset', async () => {
+    mockApi.getPrinters.mockResolvedValue([
+      { id: 7, name: 'Shop X1C', model: 'X1C', is_active: true },
+    ]);
+    mockApi.getPrinterStatus.mockResolvedValue({
+      ams: [{
+        id: 0,
+        is_ams_ht: false,
+        tray: [{
+          id: 0,
+          tray_type: 'PLA',
+          tray_sub_brands: 'PLA Basic',
+          tray_color: '112233FF',
+          remain: 73,
+          state: 11,
+          exists: true,
+        }],
+      }],
+      vt_tray: [],
+    });
+    mockApi.getSlotPresets.mockResolvedValue({
+      0: {
+        ams_id: 0,
+        tray_id: 0,
+        preset_id: 'PFUcloud-filament',
+        preset_name: 'My PLA Black',
+        preset_source: 'cloud',
+      },
+    });
+    mockApi.sliceLibraryFile.mockResolvedValue({
+      job_id: 42,
+      status: 'pending',
+      status_url: '/api/v1/slice-jobs/42',
+    });
+
+    renderWithTracker({
+      source: { kind: 'libraryFile', id: 100, filename: 'Cube.stl' },
+      onClose: vi.fn(),
+    });
+    const loadedSelect = await screen.findByRole('combobox', { name: 'Use loaded filament for slot 1' });
+    await waitFor(() => expect((loadedSelect as HTMLSelectElement).disabled).toBe(false));
+    await userEvent.setup().selectOptions(loadedSelect, '0:0');
+    await userEvent.setup().click(screen.getByRole('button', { name: /^Slice$/ }));
+
+    await waitFor(() => {
+      const [, body] = vi.mocked(mockApi.sliceLibraryFile).mock.calls[0];
+      expect(body.filament_presets?.[0]).toEqual({ source: 'cloud', id: 'PFUcloud-filament' });
+      expect(body.filament_colours?.[0]).toBe('#112233FF');
     });
   });
 
@@ -1724,6 +1825,45 @@ describe('SliceModal', () => {
       expect(body.printer_preset.source).toBe('local');
       expect(body.process_preset.source).toBe('local');
       expect(body.filament_presets[0].source).toBe('local');
+    });
+  });
+
+  it('updates the applied pipeline in place instead of creating a duplicate', async () => {
+    const pipeline = {
+      id: 7,
+      name: 'Production Batch',
+      description: null,
+      printer_preset: { source: 'local' as const, id: '1' },
+      process_preset: { source: 'local' as const, id: '2' },
+      filament_presets: [{ source: 'local' as const, id: '3' }],
+      bed_type: 'Textured PEI Plate',
+      target_kind: 'printer_class' as const,
+      target_printer_id: null,
+      target_model_class: null,
+      fanout_strategy: 'max_parallel' as const,
+      created_by: null,
+      created_at: '2026-06-27T00:00:00Z',
+      updated_at: '2026-06-27T00:00:00Z',
+    };
+    mockApi.listSlicerPipelines.mockResolvedValue({ pipelines: [pipeline] });
+    mockApi.updateSlicerPipeline.mockResolvedValue(pipeline);
+
+    renderWithTracker({
+      source: { kind: 'libraryFile', id: 100, filename: 'Cube.stl' },
+      onClose: vi.fn(),
+    });
+
+    const user = userEvent.setup();
+    await waitFor(() => expect(screen.getByRole('option', { name: 'Production Batch' })).toBeDefined());
+    await user.selectOptions(screen.getByLabelText(/Apply pipeline/i), '7');
+    await user.click(screen.getByRole('button', { name: /^Update pipeline$/ }));
+    expect((screen.getByLabelText(/New pipeline name/i) as HTMLInputElement).value).toBe('Production Batch');
+    await user.click(screen.getByRole('button', { name: /^Update pipeline$/ }));
+
+    await waitFor(() => {
+      expect(mockApi.updateSlicerPipeline).toHaveBeenCalledTimes(1);
+      expect(mockApi.updateSlicerPipeline.mock.calls[0][0]).toBe(7);
+      expect(mockApi.createSlicerPipeline).not.toHaveBeenCalled();
     });
   });
 

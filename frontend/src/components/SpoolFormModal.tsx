@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { X, Loader2, Save, Beaker, Palette, Zap, Tag, Unlink } from 'lucide-react';
+import { X, Loader2, Save, Beaker, Palette, Zap, Tag, Unlink, ScanBarcode } from 'lucide-react';
 import { api, ApiError } from '../api/client';
 import type { InventorySpool, SlicerSetting, SpoolCatalogEntry, LocalPreset, BuiltinFilament, SpoolmanBulkCreateResult, SpoolFilamentPresetInput, SpoolKProfileInput, SpoolmanFilamentEntry } from '../api/client';
 import { Button } from './Button';
@@ -24,6 +24,7 @@ import { SpoolmanFilamentPicker } from './spool-form/SpoolmanFilamentPicker';
 import { PrinterProfilesSection } from './spool-form/PrinterProfilesSection';
 import { normaliseFlow } from '../utils/nozzleFlow';
 import { SpoolUsageHistory } from './SpoolUsageHistory';
+import { BarcodeScannerModal } from './BarcodeScannerModal';
 import {
   invalidateInventoryLocations,
   invalidateSpoolAndLocationQueries,
@@ -78,6 +79,7 @@ export function SpoolFormModal({
   const [locationIdTouched, setLocationIdTouched] = useState(false);
   const [quickAdd, setQuickAdd] = useState(false);
   const [quantity, setQuantity] = useState(1);
+  const [barcodeScannerOpen, setBarcodeScannerOpen] = useState(false);
 
   // Cloud presets
   const [cloudAuthenticated, setCloudAuthenticated] = useState(false);
@@ -393,6 +395,7 @@ export function SpoolFormModal({
           material: spool.material || '',
           subtype: spool.subtype || '',
           brand: spool.brand || '',
+          barcode: spool.barcode || '',
           // #1319: leave color_name blank when the backend reports it was
           // synthesised from subtype — otherwise the form would round-trip
           // the synth value to Spoolman on save as if the user had set it,
@@ -463,6 +466,7 @@ export function SpoolFormModal({
       setModelPresets(new Map());
       setWeightTouched(false);
       setLocationIdTouched(false);
+      setBarcodeScannerOpen(false);
     }
   }, [isOpen, spool, mode, isCopying]);
 
@@ -842,6 +846,39 @@ export function SpoolFormModal({
 
   if (!isOpen) return null;
 
+  const handleBarcodeDetected = async (barcode: string) => {
+    setBarcodeScannerOpen(false);
+    try {
+      const template = await api.getSpoolByBarcode(barcode);
+      setFormData((current) => ({
+        ...current,
+        material: template.material || '',
+        subtype: template.subtype || '',
+        brand: template.brand || '',
+        barcode,
+        color_name: template.color_name || '',
+        rgba: template.rgba && /^[0-9A-Fa-f]{8}$/.test(template.rgba) ? template.rgba : '808080FF',
+        extra_colors: template.extra_colors || '',
+        effect_type: template.effect_type || '',
+        label_weight: template.label_weight || 1000,
+        core_weight: template.core_weight || 250,
+        core_weight_catalog_id: template.core_weight_catalog_id ?? null,
+        weight_used: 0,
+        slicer_filament: template.slicer_filament || '',
+        cost_per_kg: template.cost_per_kg ?? null,
+      }));
+      setPresetInputValue(template.slicer_filament_name || template.slicer_filament || '');
+      showToast(t('inventory.barcodeRecognized', 'Known filament barcode — details filled in'), 'success');
+    } catch (cause) {
+      if (cause instanceof ApiError && cause.status === 404) {
+        setFormData((current) => ({ ...current, barcode }));
+        showToast(t('inventory.barcodeNew', 'New barcode — fill in the filament once, then Bambuddy will remember it'), 'info');
+        return;
+      }
+      showToast(cause instanceof Error ? cause.message : t('inventory.barcodeLookupFailed', 'Barcode lookup failed'), 'error');
+    }
+  };
+
   const handleSubmit = () => {
     const validation = validateForm(formData, quickAdd, spoolmanMode, mode);
     if (!validation.isValid) {
@@ -859,6 +896,7 @@ export function SpoolFormModal({
       material: formData.material || null,
       subtype: formData.subtype || null,
       brand: formData.brand || null,
+      ...(spoolmanMode ? {} : { barcode: formData.barcode || null }),
       color_name: formData.color_name || null,
       rgba: formData.rgba || null,
       extra_colors: formData.extra_colors || null,
@@ -920,12 +958,24 @@ export function SpoolFormModal({
               <span className="text-sm font-mono text-bambu-gray">#{spool.id}</span>
             )}
           </h2>
-          <button
-            onClick={onClose}
-            className="p-1 text-bambu-gray hover:text-white rounded transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            {mode === 'create' && !spoolmanMode && (
+              <button
+                type="button"
+                onClick={() => setBarcodeScannerOpen(true)}
+                className="inline-flex items-center gap-1.5 rounded-md border border-bambu-dark-tertiary px-2.5 py-1 text-xs text-bambu-gray hover:text-white"
+              >
+                <ScanBarcode className="h-4 w-4" />
+                {t('inventory.scanBarcode', 'Scan barcode')}
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="p-1 text-bambu-gray hover:text-white rounded transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Quick Add toggle — only in create mode (not edit, not copy).
@@ -1169,6 +1219,12 @@ export function SpoolFormModal({
           </div>
         </div>
       </div>
+      {barcodeScannerOpen && (
+        <BarcodeScannerModal
+          onDetected={(barcode) => void handleBarcodeDetected(barcode)}
+          onClose={() => setBarcodeScannerOpen(false)}
+        />
+      )}
     </div>
   );
 }

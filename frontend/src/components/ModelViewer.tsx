@@ -48,7 +48,7 @@ function fitCameraToBox(
   controls.update();
 }
 
-interface BuildVolume {
+export interface BuildVolume {
   x: number;
   y: number;
   z: number;
@@ -63,27 +63,28 @@ interface ModelViewerProps {
   className?: string;
 }
 
-interface MeshData {
+export interface MeshData {
   vertices: number[];
   triangles: number[];
   extruder: number; // Per-mesh extruder index for coloring
 }
 
-interface ObjectData {
+export interface ObjectData {
   id: string;
   meshes: MeshData[];
   defaultExtruder: number; // Default extruder for object (used if mesh doesn't have specific one)
   plateId?: number | null;
 }
 
-interface BuildItem {
+export interface BuildItem {
   objectId: string;
   transform: THREE.Matrix4;
   extruder?: number; // Can override object's extruder
   plateId?: number | null;
+  buildIndex?: number;
 }
 
-interface Parsed3MFData {
+export interface Parsed3MFData {
   objects: Map<string, ObjectData>;
   buildItems: BuildItem[];
   plateBounds: Map<number, { minX: number; minY: number; maxX: number; maxY: number }>;
@@ -194,7 +195,10 @@ function parsePlateIdFromAttributes(element: Element): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-async function parse3MF(arrayBuffer: ArrayBuffer): Promise<Parsed3MFData> {
+// Shared by the editable plate preview. This module is primarily a component
+// module, but keeping the parser here avoids two subtly different 3MF readers.
+// eslint-disable-next-line react-refresh/only-export-components
+export async function parse3MF(arrayBuffer: ArrayBuffer): Promise<Parsed3MFData> {
   let zip: JSZip;
   try {
     zip = await JSZip.loadAsync(arrayBuffer);
@@ -511,14 +515,15 @@ async function parse3MF(arrayBuffer: ArrayBuffer): Promise<Parsed3MFData> {
       const objectPlateId = objects.get(objectId)?.plateId ?? null;
       const objectName = objectNameById.get(objectId);
       const namePlateId = objectName ? plateAssignmentsByName.get(objectName) ?? null : null;
-      buildItems.push({ objectId, transform, plateId: itemPlateId ?? objectPlateId ?? namePlateId ?? null });
+      buildItems.push({ objectId, transform, plateId: itemPlateId ?? objectPlateId ?? namePlateId ?? null, buildIndex: i });
     }
   }
 
   return { objects, buildItems, plateBounds, plateOffsets };
 }
 
-function createGeometryFromMesh(mesh: MeshData): THREE.BufferGeometry {
+// eslint-disable-next-line react-refresh/only-export-components
+export function createGeometryFromMesh(mesh: MeshData): THREE.BufferGeometry {
   const geometry = new THREE.BufferGeometry();
 
   // Convert from 3MF Z-up to Three.js Y-up coordinate system

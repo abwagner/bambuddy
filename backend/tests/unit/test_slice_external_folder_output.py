@@ -13,11 +13,15 @@ the managed library and *says so*, because filing the output somewhere the user
 is not looking with no signal is the failure this issue was made of.
 """
 
+import io
 import os
+import zipfile
 from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
+from fastapi import HTTPException
 import pytest
+from sqlalchemy import select
 
 from backend.app.api.routes.library import (
     _resolve_slice_destination,
@@ -154,7 +158,12 @@ class TestSliceAndPersistWritesToTheMount:
     """End to end through ``slice_and_persist`` with the slicer stubbed out."""
 
     @staticmethod
-    def _patched_slicer(content: bytes = b"PK\x03\x04 not-a-real-3mf"):
+    def _patched_slicer(content: bytes | None = None):
+        if content is None:
+            buf = io.BytesIO()
+            with zipfile.ZipFile(buf, "w") as zf:
+                zf.writestr("3D/3dmodel.model", "<model/>")
+            content = buf.getvalue()
         return patch(
             "backend.app.api.routes.library._run_slicer_with_fallback",
             AsyncMock(return_value=(SliceResult(content, 3600, 12.5, 4200.0), False)),
@@ -185,25 +194,26 @@ class TestSliceAndPersistWritesToTheMount:
 
         response, file_row = await self._slice_into(db_session, _external_folder(mount))
 
-        assert (mount / "Bidoof.gcode.3mf").exists()
+        assert (mount / "Sliced" / "Bidoof.gcode.3mf").exists()
         assert response.external_write_fallback is None
         # The row has to agree with the disk, or the next move/scan/delete
         # works on a path that isn't there.
         assert file_row.is_external is True
-        assert file_row.file_path == str(mount / "Bidoof.gcode.3mf")
+        assert file_row.file_path == str(mount / "Sliced" / "Bidoof.gcode.3mf")
         assert file_row.filename == "Bidoof.gcode.3mf"
 
     @pytest.mark.asyncio
     async def test_the_row_records_the_suffixed_name_on_a_collision(self, db_session, tmp_path):
         mount = tmp_path / "share"
         mount.mkdir()
-        (mount / "Bidoof.gcode.3mf").write_bytes(b"an earlier slice")
+        (mount / "Sliced").mkdir()
+        (mount / "Sliced" / "Bidoof.gcode.3mf").write_bytes(b"an earlier slice")
 
         _response, file_row = await self._slice_into(db_session, _external_folder(mount))
 
         assert file_row.filename == "Bidoof (2).gcode.3mf"
-        assert file_row.file_path == str(mount / "Bidoof (2).gcode.3mf")
-        assert (mount / "Bidoof.gcode.3mf").read_bytes() == b"an earlier slice"
+        assert file_row.file_path == str(mount / "Sliced" / "Bidoof (2).gcode.3mf")
+        assert (mount / "Sliced" / "Bidoof.gcode.3mf").read_bytes() == b"an earlier slice"
 
     @pytest.mark.asyncio
     async def test_a_managed_folder_is_unaffected(self, db_session, tmp_path):
@@ -229,3 +239,26 @@ class TestSliceAndPersistWritesToTheMount:
         assert file_row.is_external is False
         assert (file_row.file_metadata or {}).get("external_write_fallback") == "external_readonly"
         assert list(mount.iterdir()) == []
+
+    @pytest.mark.asyncio
+    async def test_invalid_slicer_payload_is_not_saved_or_foldered(self, db_session):
+        folder = LibraryFolder(name="Models", parent_id=None, is_external=False)
+        db_session.add(folder)
+        await db_session.commit()
+        await db_session.refresh(folder)
+
+        with self._patched_slicer(b"not a 3mf"):
+            with pytest.raises(HTTPException, match="invalid 3MF"):
+                await slice_and_persist(
+                    db_session,
+                    model_bytes=b"source model",
+                    model_filename="Bidoof.3mf",
+                    folder_id=folder.id,
+                    extra_metadata=None,
+                    request=SliceRequest(printer_preset_id=1, process_preset_id=2, filament_preset_id=3),
+                    current_user_id=None,
+                )
+
+        assert (await db_session.execute(select(LibraryFile))).scalars().all() == []
+        children = (await db_session.execute(select(LibraryFolder).where(LibraryFolder.parent_id == folder.id))).scalars().all()
+        assert children == []

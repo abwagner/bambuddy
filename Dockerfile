@@ -11,6 +11,11 @@ RUN --mount=type=cache,target=/root/.npm \
     npm ci
 
 COPY frontend/ ./
+# Optional deployment-specific URL for the browser OrcaSlicer workspace.
+# Keeping this build-time value out of the runtime image lets the same
+# Bambuddy backend run with or without the companion UI.
+ARG VITE_ORCA_WEB_UI_URL=
+ENV VITE_ORCA_WEB_UI_URL=${VITE_ORCA_WEB_UI_URL}
 RUN npm run build
 
 # Production image

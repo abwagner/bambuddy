@@ -2567,6 +2567,7 @@ async def get_slot_presets(
             "tray_id": mapping.tray_id,
             "preset_id": mapping.preset_id,
             "preset_name": mapping.preset_name,
+            "preset_source": mapping.preset_source,
         }
         for mapping in mappings
     }
@@ -2598,6 +2599,7 @@ async def get_slot_preset(
         "tray_id": mapping.tray_id,
         "preset_id": mapping.preset_id,
         "preset_name": mapping.preset_name,
+        "preset_source": mapping.preset_source,
     }
 
 

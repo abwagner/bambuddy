@@ -197,10 +197,10 @@ export function SliceJobTrackerProvider({ children }: { children: ReactNode }) {
           t('slice.completedToast', 'Sliced {{name}}', { name: prettifyFilename(job.sourceName) }),
           'success',
         );
-        // The result normally lands next to its source, including on an
-        // external mount. When the mount can't take it the file is still
-        // kept — in managed storage — but the user has to be told, or they
-        // go looking on the share and find nothing (#2810).
+        // Results normally land in the source folder's Sliced child,
+        // including on an external mount. When the mount can't take it the
+        // file is still kept in managed storage, but the user has to be told
+        // or they go looking on the share and find nothing (#2810).
         const fallback =
           state.result && 'external_write_fallback' in state.result
             ? state.result.external_write_fallback
@@ -223,6 +223,8 @@ export function SliceJobTrackerProvider({ children }: { children: ReactNode }) {
 
       // Refresh whichever list owns the result. Both are cheap to invalidate.
       queryClient.invalidateQueries({ queryKey: ['library-files'] });
+      // A successful library slice can create the Sliced child folder.
+      queryClient.invalidateQueries({ queryKey: ['library-folders'] });
       queryClient.invalidateQueries({ queryKey: ['archives'] });
     },
     [dismissToast, queryClient, showToast, t],

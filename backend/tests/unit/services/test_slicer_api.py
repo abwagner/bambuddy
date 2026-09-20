@@ -419,6 +419,53 @@ class TestSliceWithProfiles:
         assert b'name="orient"' not in body
 
     @pytest.mark.asyncio
+    async def test_geometry_actions_emit_non_default_form_fields(self):
+        captured: dict = {}
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            captured["body"] = request.content
+            return httpx.Response(
+                status_code=200,
+                content=b"3MF",
+                headers={"x-print-time-seconds": "0", "x-filament-used-g": "0", "x-filament-used-mm": "0"},
+            )
+
+        service = SlicerApiService("http://sidecar:3000", client=_mock_client(handler))
+        await service.slice_without_profiles(
+            model_bytes=b"x",
+            model_filename="Cube.3mf",
+            copies=4,
+            rotation_x=90,
+            rotation_y=180,
+            rotation_z=270,
+        )
+
+        body = captured["body"]
+        for field, value in ((b"repetitions", b"4"), (b"rotateX", b"90"), (b"rotateY", b"180"), (b"rotate", b"270")):
+            assert b'name="' + field + b'"' in body
+            assert value in body
+
+    @pytest.mark.asyncio
+    async def test_geometry_action_defaults_are_omitted(self):
+        captured: dict = {}
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            captured["body"] = request.content
+            return httpx.Response(
+                status_code=200,
+                content=b"3MF",
+                headers={"x-print-time-seconds": "0", "x-filament-used-g": "0", "x-filament-used-mm": "0"},
+            )
+
+        service = SlicerApiService("http://sidecar:3000", client=_mock_client(handler))
+        await service.slice_without_profiles(model_bytes=b"x", model_filename="Cube.3mf")
+        body = captured["body"]
+        assert b'name="repetitions"' not in body
+        assert b'name="rotateX"' not in body
+        assert b'name="rotateY"' not in body
+        assert b'name="rotate"' not in body
+
+    @pytest.mark.asyncio
     async def test_multi_filament_sends_one_part_per_profile(self):
         # Multi-color slicing requires N filament profiles, in plate-slot
         # order, sent as N repeated multipart `filamentProfile` parts (NOT a

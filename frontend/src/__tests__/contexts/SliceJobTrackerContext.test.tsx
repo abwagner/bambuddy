@@ -567,7 +567,7 @@ describe('SliceJobTrackerProvider — one completion per job', () => {
       });
     }
 
-    expect(counter.n / 2).toBe(1);
+    expect(counter.n / 3).toBe(1);
     // The in-flight guard also has to stop the pile-up itself, not just its
     // visible consequence: a stalled backend must not be handed a fresh
     // request every 1.5s. One poll starts, one more can start after it
@@ -624,7 +624,7 @@ describe('SliceJobTrackerProvider — one completion per job', () => {
     }
 
     // Exactly two completions: one per job, neither repeated.
-    expect(counter.n / 2).toBe(2);
+    expect(counter.n / 3).toBe(2);
   });
 
   it('still completes a job tracked again under the same id', async () => {
@@ -664,6 +664,6 @@ describe('SliceJobTrackerProvider — one completion per job', () => {
       }
     }
 
-    expect(counter.n / 2).toBe(2);
+    expect(counter.n / 3).toBe(2);
   });
 });

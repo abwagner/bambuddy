@@ -62,6 +62,7 @@ import { ConfirmModal } from '../components/ConfirmModal';
 import { ContextMenu, type ContextMenuItem } from '../components/ContextMenu';
 import { PrintModal } from '../components/PrintModal';
 import { ModelViewerModal } from '../components/ModelViewerModal';
+import { PlateEditorModal } from '../components/PlateEditorModal';
 import { SliceModal } from '../components/SliceModal';
 import { RunWithPipelineModal } from '../components/RunWithPipelineModal';
 import { BulkTagsPickerModal } from '../components/BulkTagsPickerModal';
@@ -80,7 +81,13 @@ import { isSlicedLibraryFile, isSliceableLibraryFile } from '../utils/libraryFil
 
 type SortField = 'name' | 'date' | 'size' | 'type' | 'prints';
 type SortDirection = 'asc' | 'desc';
+type FileKind = 'all' | 'models' | 'slices';
 type TFunction = (key: string, options?: Record<string, unknown>) => string;
+type PlateEditorSelection = {
+  file: LibraryFileListItem;
+  plateId: number | null;
+  initialModels?: Array<{ id: number; filename: string; fileType?: string }>;
+};
 
 // New Folder Modal
 interface NewFolderModalProps {
@@ -1022,6 +1029,7 @@ export function FileManagerPage() {
   const [renameItem, setRenameItem] = useState<{ type: 'file' | 'folder'; id: number; name: string } | null>(null);
   const [thumbnailVersions, setThumbnailVersions] = useState<Record<number, number>>({});
   const [viewerFile, setViewerFile] = useState<LibraryFileListItem | null>(null);
+  const [editorFile, setEditorFile] = useState<PlateEditorSelection | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>(() => {
     return (localStorage.getItem('library-view-mode') as 'grid' | 'list') || 'grid';
   });
@@ -1092,6 +1100,7 @@ export function FileManagerPage() {
   // Filter and sort state (persist sort preferences to localStorage)
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
+  const [filterKind, setFilterKind] = useState<FileKind>('all');
   const [filterUsername, setFilterUsername] = useState('');
   const [sortField, setSortField] = useState<SortField>(() => {
     const saved = localStorage.getItem('library-sort-field');
@@ -1313,6 +1322,14 @@ export function FileManagerPage() {
       result = result.filter((f) => f.file_type === filterType);
     }
 
+    // Keep source models and printer-ready output easy to separate even in
+    // legacy folders that predate automatic Sliced subfolders.
+    if (filterKind === 'slices') {
+      result = result.filter((f) => isSlicedLibraryFile(f));
+    } else if (filterKind === 'models') {
+      result = result.filter((f) => !isSlicedLibraryFile(f));
+    }
+
     // Apply username filter
     if (filterUsername.trim()) {
       const query = filterUsername.toLowerCase();
@@ -1349,7 +1366,7 @@ export function FileManagerPage() {
     });
 
     return result;
-  }, [files, searchQuery, filterType, filterUsername, sortField, sortDirection]);
+  }, [files, searchQuery, filterType, filterKind, filterUsername, sortField, sortDirection]);
 
   // Check if disk space is low
   const isDiskSpaceLow = useMemo(() => {
@@ -1572,6 +1589,19 @@ export function FileManagerPage() {
   const selectedSlicedFiles = useMemo(() => {
     if (!files) return [];
     return files.filter(f => selectedFiles.includes(f.id) && isSlicedLibraryFile(f));
+  }, [files, selectedFiles]);
+
+  // Source STL/3MF files selected together can be turned into one new build
+  // plate. Sliced outputs are intentionally excluded because they already
+  // contain printer-specific G-code rather than editable model geometry.
+  const selectedBuildPlateFiles = useMemo(() => {
+    if (!files) return [];
+    return files.filter((file) => {
+      const type = (file.file_type || '').toLowerCase();
+      return selectedFiles.includes(file.id)
+        && !isSlicedLibraryFile(file)
+        && (type === 'stl' || type === '3mf' || /\.(?:stl|3mf)$/i.test(file.filename));
+    });
   }, [files, selectedFiles]);
 
   // The clicked file's variant group, so printing one member offers the rest
@@ -2150,6 +2180,16 @@ export function FileManagerPage() {
               <div className="flex items-center gap-2">
                 <Filter className="w-4 h-4 text-bambu-gray hidden sm:block" />
                 <select
+                  value={filterKind}
+                  onChange={(e) => setFilterKind(e.target.value as FileKind)}
+                  aria-label={t('fileManager.fileKind', { defaultValue: 'File kind' })}
+                  className="bg-bambu-dark border border-bambu-dark-tertiary rounded px-2 py-1.5 text-sm text-white focus:outline-none focus:border-bambu-green"
+                >
+                  <option value="all">{t('fileManager.allFiles', { defaultValue: 'All files' })}</option>
+                  <option value="models">{t('fileManager.modelFiles', { defaultValue: 'Models' })}</option>
+                  <option value="slices">{t('fileManager.slicedOutputs', { defaultValue: 'Sliced outputs' })}</option>
+                </select>
+                <select
                   value={filterType}
                   onChange={(e) => setFilterType(e.target.value)}
                   className="bg-bambu-dark border border-bambu-dark-tertiary rounded px-2 py-1.5 text-sm text-white focus:outline-none focus:border-bambu-green"
@@ -2240,7 +2280,7 @@ export function FileManagerPage() {
               </div>
 
               {/* Results count */}
-              {(searchQuery || filterType !== 'all' || filterUsername) && (
+              {(searchQuery || filterKind !== 'all' || filterType !== 'all' || filterUsername) && (
                 <span className="text-sm text-bambu-gray hidden sm:inline">
                   {t('fileManager.resultsCount', { showing: filteredAndSortedFiles.length, total: files.length })}
                 </span>
@@ -2279,6 +2319,30 @@ export function FileManagerPage() {
                   </span>
                   <div className="hidden sm:block flex-1" />
                   <div className="w-full sm:w-auto flex flex-wrap items-center gap-2 mt-2 sm:mt-0">
+                    {selectedBuildPlateFiles.length >= 1 && (
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={() => {
+                          const primary = selectedBuildPlateFiles[0];
+                          setEditorFile({
+                            file: primary,
+                            plateId: null,
+                            initialModels: selectedBuildPlateFiles.map((file) => ({
+                              id: file.id,
+                              filename: file.filename,
+                              fileType: file.file_type,
+                            })),
+                          });
+                          setSelectedFiles([]);
+                        }}
+                        disabled={!hasPermission('library:upload')}
+                        title={!hasPermission('library:upload') ? 'You need library upload permission to create a build plate' : undefined}
+                      >
+                        <Box className="w-4 h-4 sm:mr-1" />
+                        <span className="hidden sm:inline">Create build plate{selectedBuildPlateFiles.length > 1 ? ` (${selectedBuildPlateFiles.length})` : ''}</span>
+                      </Button>
+                    )}
                     {/* Print used to disappear the moment a second sliced file was
                         selected. Selecting several is now how you say "same job,
                         different printers" (#671) — one queue item, whichever
@@ -2409,7 +2473,7 @@ export function FileManagerPage() {
               <p className="text-bambu-gray text-center max-w-md mb-6">
                 {t('fileManager.noMatchingFilesDescription')}
               </p>
-              <Button variant="secondary" onClick={() => { setSearchQuery(''); setFilterType('all'); }}>
+              <Button variant="secondary" onClick={() => { setSearchQuery(''); setFilterKind('all'); setFilterType('all'); }}>
                 {t('fileManager.clearFilters')}
               </Button>
             </div>
@@ -2866,6 +2930,10 @@ export function FileManagerPage() {
           title={viewerFile.print_name || viewerFile.filename}
           fileType={viewerFile.file_type}
           onClose={() => setViewerFile(null)}
+          onEditLayout={(plateId) => {
+            if (!hasPermission('library:upload')) return;
+            setEditorFile({ file: viewerFile, plateId });
+          }}
           onSliceWithBambuddy={
             // Only offer in-app slicing on files the SliceModal can actually
             // handle (matches the file-row Cog visibility check at :2127).
@@ -2877,6 +2945,25 @@ export function FileManagerPage() {
                 }
               : undefined
           }
+        />
+      )}
+
+      {editorFile && (
+        <PlateEditorModal
+          libraryFileId={editorFile.file.id}
+          filename={editorFile.file.filename}
+          fileType={editorFile.file.file_type}
+          folderId={editorFile.file.folder_id}
+          plateId={editorFile.plateId}
+          initialModels={editorFile.initialModels}
+          onClose={() => setEditorFile(null)}
+          onSaved={(uploaded) => {
+            const nextFile = { id: uploaded.id, filename: uploaded.filename } as LibraryFileListItem;
+            setEditorFile(null);
+            setViewerFile(null);
+            setSliceFile(nextFile);
+            queryClient.invalidateQueries({ queryKey: ['library-files'] });
+          }}
         />
       )}
 

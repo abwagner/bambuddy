@@ -32,7 +32,16 @@ class SlicerPipelineBase(BaseModel):
 
 
 class SlicerPipelineCreate(SlicerPipelineBase):
-    """Payload for POST /slicer-pipelines."""
+    """Payload for POST /slicer-pipelines.
+
+    A target printer is optional for slice-only pipelines. When supplied, the
+    pipeline can be run from the file manager as slice + print.
+    """
+
+    target_kind: Literal["specific_printer", "printer_class"] = "printer_class"
+    target_printer_id: int | None = None
+    target_model_class: str | None = Field(default=None, max_length=20)
+    fanout_strategy: Literal["max_parallel", "fill_one_first", "round_robin"] = "max_parallel"
 
 
 class SlicerPipelineUpdate(BaseModel):

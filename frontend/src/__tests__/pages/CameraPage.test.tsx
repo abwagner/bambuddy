@@ -114,6 +114,14 @@ describe('CameraPage', () => {
         expect(screen.getByText('X1 Carbon')).toBeInTheDocument();
       });
     });
+
+    it('provides a back button for mobile browsers that reuse the current tab', async () => {
+      renderCameraPage(1);
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /back to printers/i })).toBeInTheDocument();
+      });
+    });
   });
 
   describe('camera controls', () => {

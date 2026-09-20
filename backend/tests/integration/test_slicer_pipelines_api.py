@@ -60,6 +60,55 @@ class TestSlicerPipelinesAPI:
 
     @pytest.mark.asyncio
     @pytest.mark.integration
+    async def test_create_accepts_slice_and_print_target(self, async_client: AsyncClient):
+        """A pipeline can persist the printer target used by Run with pipeline."""
+        resp = await async_client.post(
+            "/api/v1/slicer-pipelines/",
+            json=_payload(
+                name="X1C Production",
+                target_kind="specific_printer",
+                target_printer_id=1,
+            ),
+        )
+        assert resp.status_code == 201, resp.text
+        created = resp.json()
+        assert created["target_kind"] == "specific_printer"
+        assert created["target_printer_id"] == 1
+
+    @pytest.mark.asyncio
+    @pytest.mark.integration
+    async def test_create_rejects_duplicate_name_case_insensitively(self, async_client: AsyncClient):
+        """Saving a new pipeline cannot silently create a duplicate name."""
+        first = await async_client.post("/api/v1/slicer-pipelines/", json=_payload(name="Production Batch"))
+        assert first.status_code == 201, first.text
+        duplicate = await async_client.post(
+            "/api/v1/slicer-pipelines/",
+            json=_payload(name="  production batch "),
+        )
+        assert duplicate.status_code == 409
+
+    @pytest.mark.asyncio
+    @pytest.mark.integration
+    async def test_update_replaces_full_bundle_without_creating_row(self, async_client: AsyncClient):
+        """PUT can overwrite the saved slicer bundle in place."""
+        created = (await async_client.post("/api/v1/slicer-pipelines/", json=_payload(name="Replace Me"))).json()
+        replacement = _payload(
+            name="Replace Me",
+            printer_preset=_preset_ref("standard", "Bambu Lab X1 Carbon 0.4 nozzle"),
+            process_preset=_preset_ref("standard", "0.20mm Standard @BBL X1C"),
+            filament_presets=[_preset_ref("standard", "Bambu PLA Basic @BBL X1C")],
+            target_kind="specific_printer",
+            target_printer_id=1,
+        )
+        updated = await async_client.put(f"/api/v1/slicer-pipelines/{created['id']}", json=replacement)
+        assert updated.status_code == 200, updated.text
+        assert updated.json()["id"] == created["id"]
+        assert updated.json()["printer_preset"] == replacement["printer_preset"]
+        listing = (await async_client.get("/api/v1/slicer-pipelines/")).json()["pipelines"]
+        assert [p["id"] for p in listing].count(created["id"]) == 1
+
+    @pytest.mark.asyncio
+    @pytest.mark.integration
     async def test_get_by_id(self, async_client: AsyncClient):
         """Round-trips the preset slots through JSON storage faithfully."""
         created = (await async_client.post("/api/v1/slicer-pipelines/", json=_payload())).json()

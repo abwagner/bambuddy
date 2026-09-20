@@ -11,7 +11,8 @@ import json
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
+from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.core.auth import RequirePermissionIfAuthEnabled
@@ -62,6 +63,32 @@ def _to_response(row: SlicerPipeline) -> SlicerPipelineResponse:
     )
 
 
+async def _assert_unique_active_name(
+    db: AsyncSession,
+    name: str,
+    *,
+    exclude_id: int | None = None,
+) -> None:
+    """Reject duplicate active names before writing a pipeline.
+
+    Names are a user-facing identifier in the Slice dialog. Comparing the
+    trimmed, case-folded form prevents confusing duplicates such as
+    ``Production PLA`` and `` production pla `` while still allowing a name
+    to be reused after its old pipeline was deleted.
+    """
+    cleaned = name.strip()
+    if not cleaned:
+        raise HTTPException(422, "Pipeline name cannot be blank")
+    query = select(SlicerPipeline.id).where(
+        SlicerPipeline.is_deleted.is_(False),
+        func.lower(func.trim(SlicerPipeline.name)) == cleaned.lower(),
+    )
+    if exclude_id is not None:
+        query = query.where(SlicerPipeline.id != exclude_id)
+    if (await db.execute(query)).scalar_one_or_none() is not None:
+        raise HTTPException(409, "A pipeline with this name already exists")
+
+
 @router.get("/", response_model=SlicerPipelineListResponse)
 async def list_pipelines(
     _: User | None = RequirePermissionIfAuthEnabled(Permission.PIPELINES_READ),
@@ -82,6 +109,7 @@ async def create_pipeline(
     db: AsyncSession = Depends(get_db),
 ):
     """Create a new pipeline."""
+    await _assert_unique_active_name(db, data.name)
     row = SlicerPipeline(
         name=data.name.strip(),
         description=data.description,
@@ -91,10 +119,19 @@ async def create_pipeline(
         process_preset_id=data.process_preset.id,
         filament_presets_json=json.dumps([f.model_dump() for f in data.filament_presets]),
         bed_type=data.bed_type,
+        target_kind=data.target_kind,
+        target_printer_id=data.target_printer_id,
+        target_model_class=data.target_model_class,
+        fanout_strategy=data.fanout_strategy,
         created_by=current_user.id if current_user else None,
     )
     db.add(row)
-    await db.commit()
+    try:
+        await db.commit()
+    except IntegrityError as exc:
+        await db.rollback()
+        logger.warning("slicer pipeline create rejected by uniqueness constraint: %s", exc)
+        raise HTTPException(409, "A pipeline with this name already exists") from exc
     await db.refresh(row)
     return _to_response(row)
 
@@ -137,6 +174,7 @@ async def update_pipeline(
         raise HTTPException(404, "Pipeline not found")
 
     if data.name is not None:
+        await _assert_unique_active_name(db, data.name, exclude_id=pipeline_id)
         row.name = data.name.strip()
     if data.description is not None:
         row.description = data.description
@@ -173,7 +211,12 @@ async def update_pipeline(
     if data.fanout_strategy is not None:
         row.fanout_strategy = data.fanout_strategy
 
-    await db.commit()
+    try:
+        await db.commit()
+    except IntegrityError as exc:
+        await db.rollback()
+        logger.warning("slicer pipeline %d update rejected by uniqueness constraint: %s", pipeline_id, exc)
+        raise HTTPException(409, "A pipeline with this name already exists") from exc
     await db.refresh(row)
     return _to_response(row)
 

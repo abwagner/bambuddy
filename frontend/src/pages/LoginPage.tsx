@@ -269,7 +269,10 @@ export function LoginPage() {
       const errorMsg = KNOWN_OIDC_ERRORS[oidcError]
         ?? (oidcError.startsWith('token_exchange_') ? t('login.oidcErrors.tokenExchangeFailed') : t('login.oidcLoginFailed'));
       showToast(errorMsg, 'error');
-      navigate('/login', { replace: true });
+      // Keep the error query on /login. Removing it immediately causes the
+      // autologin effect to see a clean URL and start the failed flow again,
+      // producing a redirect loop instead of leaving the provider button
+      // available for a retry.
       return;
     }
 
@@ -298,7 +301,7 @@ export function LoginPage() {
       }).catch((err: unknown) => {
         console.error('OIDC token exchange failed', err);
         showToast(t('login.oidcLoginFailed'), 'error');
-        navigate('/login', { replace: true });
+        navigate('/login?oidc_error=internal_error', { replace: true });
       });
     }
   }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps

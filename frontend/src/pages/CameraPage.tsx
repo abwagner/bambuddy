@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useParams, useSearchParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { RefreshCw, AlertTriangle, Camera, Maximize, Minimize, WifiOff, ZoomIn, ZoomOut, Stethoscope } from 'lucide-react';
+import { ArrowLeft, RefreshCw, AlertTriangle, Camera, Maximize, Minimize, WifiOff, ZoomIn, ZoomOut, Stethoscope } from 'lucide-react';
 import { api, getAuthToken, getStreamToken, withStreamToken } from '../api/client';
 import { useToast } from '../contexts/ToastContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -18,6 +18,7 @@ const STALL_CHECK_INTERVAL = 5000; // Check every 5 seconds
 
 export function CameraPage() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { showToast } = useToast();
   const { hasPermission, authEnabled, user } = useAuth();
@@ -464,6 +465,20 @@ export function CameraPage() {
     }
   };
 
+  // The camera is normally opened in a separate window, but mobile browsers
+  // commonly reuse the current tab. Always provide an in-app escape hatch for
+  // that case; window.close() is only useful when this page was script-opened.
+  const leaveCamera = () => {
+    if (document.fullscreenElement) {
+      void document.exitFullscreen().catch(() => {});
+    }
+    if (window.opener && !window.opener.closed) {
+      window.close();
+      return;
+    }
+    navigate('/');
+  };
+
   const handleZoomIn = () => {
     setZoomLevel(prev => Math.min(prev + 0.5, 4));
   };
@@ -649,12 +664,21 @@ export function CameraPage() {
   return (
     <div ref={containerRef} className="min-h-screen bg-black flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-2 bg-bambu-dark-secondary border-b border-bambu-dark-tertiary">
-        <h1 className="text-sm font-medium text-white flex items-center gap-2">
-          <Camera className="w-4 h-4" />
-          {printer?.name || `Printer ${id}`}
+      <div className="flex flex-wrap items-center gap-2 px-3 sm:px-4 py-2 bg-bambu-dark-secondary border-b border-bambu-dark-tertiary">
+        <button
+          onClick={leaveCamera}
+          className="flex items-center gap-1.5 px-2 py-1.5 rounded hover:bg-bambu-dark-tertiary text-white text-sm"
+          aria-label={t('camera.backToPrinters', { defaultValue: 'Back to printers' })}
+          title={t('camera.backToPrinters', { defaultValue: 'Back to printers' })}
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span className="hidden sm:inline">{t('common.back', { defaultValue: 'Back' })}</span>
+        </button>
+        <h1 className="min-w-0 flex-1 text-sm font-medium text-white flex items-center gap-2">
+          <Camera className="w-4 h-4 flex-shrink-0" />
+          <span className="truncate">{printer?.name || `Printer ${id}`}</span>
         </h1>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2 ml-auto">
           {/* Mode toggle */}
           <div className="flex bg-bambu-dark rounded p-0.5">
             <button
